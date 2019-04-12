@@ -622,29 +622,29 @@ try:
         print " done"
 
 
-##        print " Remove HAZUS rows from hzCareFlty"
-##        try:
-##            cursor.execute("")
-##            conn.commit()
-##        except:
-##            print " cursor execute Delete HAZUS from hzCareFlty exception"
-##        print "done"
+        print " Remove HAZUS rows from hzCareFlty"
+        try:
+            cursor.execute("")
+            conn.commit()
+        except:
+            print " cursor execute Delete HAZUS from hzCareFlty exception"
+        print "done"
         
-##        print " Remove hazus rows from flCareFlty"
-##        try:
-##            cursor.execute("")
-##            conn.commit()
-##        except:
-##            print " cursor execute Delete HAZUS from flCareFlty exception"
-##        print "done"
+        print " Remove hazus rows from flCareFlty"
+        try:
+            cursor.execute("")
+            conn.commit()
+        except:
+            print " cursor execute Delete HAZUS from flCareFlty exception"
+        print "done"
         
-##        print " Remove hazus rows from eqCareFlty"
-##        try:
-##            cursor.execute("")
-##            conn.commit()
-##        except:
-##            print " cursor execute Delete HAZUS from eqCareFlty exception"
-##        print "done"
+        print " Remove hazus rows from eqCareFlty"
+        try:
+            cursor.execute("")
+            conn.commit()
+        except:
+            print " cursor execute Delete HAZUS from eqCareFlty exception"
+        print "done"
         
 except:
     print " exception Move Data from Staging to HAZUS Tables"
