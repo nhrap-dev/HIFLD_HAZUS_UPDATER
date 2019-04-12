@@ -315,7 +315,31 @@ try:
             conn.commit()
         except:
             print " cursor execute UPDATE CalcBldgSqFt exception"
-
+            
+        # CENSUS TRACTS ID      
+        # Calculate Shape
+        try:
+            cursor.execute("UPDATE "+hifldtable+\
+                           " SET Shape = geometry::Point(LONGITUDE, LATITUDE, 4326)")
+            conn.commit()
+        except:
+            print " cursor execute UPDATE Shape exception"
+        # Calculate TractID field...
+        # To get all tract id's from hzTract based on the intersection of hzcareflty and hztract...
+        try:
+            cursor.execute("UPDATE a SET a.CensusTractID = b.tract, \
+                            a.BldgSchemesId = b.BldgSchemesId FROM ["+state+\
+                            "]..[hzTract] b INNER JOIN "+hifldtable+\
+                            " a ON b.shape.STIntersects(a.shape) = 1")
+            conn.commit()
+        except:
+            print " cursor execute UPDATE tractid exception"
+        # If a facility does not intersect...
+        try:
+            pass
+        except:
+            print " cursor execute UPDATE no-intersection tractid exception"
+            
         # Update CountyFIPSID based on CensusTractID
         try:
             updateData = "UPDATE "+hifldtable+" SET [FIPSCountyID] = LEFT([CensusTractID],5)"
@@ -331,14 +355,13 @@ try:
                                 ";Database=CDMS;UID="+UserName+";PWD="+Password
             connCDMS = pyodbc.connect(connectStringCDMS, autocommit=False)
             cursorCDMS = connCDMS.cursor()
-
-
+            
             # Join table on CountyFIPS and assign MeansAdjNonRes values
             try:
                 cursor.execute("UPDATE table1 SET table1.MeansAdjNonRes = table2.MeansAdjNonRes \
                                 FROM "+hifldtable+" AS table1 \
                                 LEFT JOIN ["+state+"]..[hzMeansCountyLocationFactor] as table2 \
-                                ON table1.CountyFIPS = table2.CountyFIPS")
+                                ON table1.CountyFIPSID = table2.CountyFIPS")
                 conn.commit()
             except:
                 print "cursor execute UPDATE Calculate Cost exception - MeansAdjNonRes table join"
@@ -368,30 +391,6 @@ try:
             conn.commit()
         except:
             print "cursor execute UPDATE Calculate Cost exception"
-
-        # CENSUS TRACTS ID      
-        # Calculate Shape
-        try:
-            cursor.execute("UPDATE "+hifldtable+\
-                           " SET Shape = geometry::Point(LONGITUDE, LATITUDE, 4326)")
-            conn.commit()
-        except:
-            print " cursor execute UPDATE Shape exception"
-        # Calculate TractID field...
-        # To get all tract id's from hzTract based on the intersection of hzcareflty and hztract...
-        try:
-            cursor.execute("UPDATE a SET a.CensusTractID = b.tract, \
-                            a.BldgSchemesId = b.BldgSchemesId FROM ["+state+\
-                            "]..[hzTract] b INNER JOIN "+hifldtable+\
-                            " a ON b.shape.STIntersects(a.shape) = 1")
-            conn.commit()
-        except:
-            print " cursor execute UPDATE tractid exception"
-        # If a facility does not intersect...
-        try:
-            pass
-        except:
-            print " cursor execute UPDATE no-intersection tractid exception"
 
         # MedianYearBuilt
         try:
