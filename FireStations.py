@@ -1,7 +1,7 @@
 # NiyamIT
 # COLIN LINDEMAN, GIS Developer
 # Proof of Concept - HIFLD FireStation into HAZUS FireStation.
-# Last Update: 2019-04-12
+# Last Update: 2019-04-16
 # Requirements:
 #    Python 2.7, pyodbc
 #    SQL Server 12.0.4237
@@ -35,7 +35,6 @@ possibleDatabaseListRaw = cfgParser.get("DATABASE LIST", "possibleDatabaseList")
 possibleDatabaseList = []
 for database in possibleDatabaseListRaw.split(","):
     possibleDatabaseList.append(database)
-userDefinedSqFt = cfgParser.get("FIRE STATIONS", "BedRoomSqFt")
 print "Done"
 print
 
@@ -168,7 +167,7 @@ print
 
 print "Copy Downloaded HIFLD CSV to SQL Staging Table..."
 try:
-    # Define the (30) columns that data will be inserted into
+    # Define the columns that data will be inserted into
     hifld_FireStation_Columns = "ID, \
                                 NAME, \
                                 ADDRESS, \
@@ -319,8 +318,9 @@ try:
                                 ";Database=CDMS;UID="+UserName+";PWD="+Password
             connCDMS = pyodbc.connect(connectStringCDMS, autocommit=False)
             cursorCDMS = connCDMS.cursor()
-            cursorCDMS.execute("SELECT Occupancy,SquareFootage FROM \
-                                [CDMS]..[hzSqftFactors] WHERE Occupancy = 'GOV2'")
+            cursorCDMS.execute("SELECT Occupancy,SquareFootage \
+                                FROM [CDMS]..[hzSqftFactors] \
+                                WHERE Occupancy = 'GOV2'")
             rows = cursorCDMS.fetchall()
             for row in rows:
                 HazusDefaultSqFt = str(row.SquareFootage)
@@ -342,17 +342,20 @@ try:
         # Calculate TractID field...
         # To get all tract id's from hzTract based on the intersection of hzFireStation and hztract...
         try:
-            cursor.execute("UPDATE a SET a.CensusTractID = b.tract, \
-                            a.BldgSchemesId = b.BldgSchemesId FROM ["+state+\
-                            "]..[hzTract] b INNER JOIN "+hifldtable+\
-                            " a ON b.shape.STIntersects(a.shape) = 1")
+            cursor.execute("UPDATE a \
+                            SET a.CensusTractID = b.tract, \
+                            a.BldgSchemesId = b.BldgSchemesId \
+                            FROM ["+state+"]..[hzTract] b \
+                            INNER JOIN "+hifldtable+" a \
+                            ON b.shape.STIntersects(a.shape) = 1")
             conn.commit()
         except:
             print " cursor execute UPDATE tractid exception"
             
         # Update CountyFIPSID based on CensusTractID
         try:
-            cursor.execute("UPDATE "+hifldtable+" SET [FIPSCountyID] = LEFT([CensusTractID], 5);")
+            cursor.execute("UPDATE "+hifldtable+" \
+                            SET [FIPSCountyID] = LEFT([CensusTractID], 5)")
             conn.commit()
         except:
             print "cursor execute UPDATE CountyFIPSID based on CensusTractID"
@@ -365,16 +368,25 @@ try:
             connCDMS = pyodbc.connect(connectStringCDMS, autocommit=False)
             cursorCDMS = connCDMS.cursor()
 
-
             # Join table on CountyFIPS and assign MeansAdjNonRes values
             try:
-                cursor.execute("UPDATE table1 SET table1.MeansAdjNonRes = table2.MeansAdjNonRes \
+                cursor.execute("UPDATE table1 \
+                                SET table1.MeansAdjNonRes = table2.MeansAdjNonRes \
                                 FROM "+hifldtable+" AS table1 \
                                 LEFT JOIN ["+state+"]..[hzMeansCountyLocationFactor] as table2 \
                                 ON [table1].[FIPSCountyID] = [table2].[CountyFIPS]")
                 conn.commit()
             except:
                 print "cursor execute UPDATE Calculate Cost exception - MeansAdjNonRes table join"
+
+            # Set MeansAdjNonRes to 1 if its value is null due to not having a hzMeansCountyLocationFactor table (GU, AS, VI, MP)
+            try:
+                cursor.execute("UPDATE "+hifldtable+" \
+                                SET MeansAdjNonRes = 1 \
+                                WHERE MeansAdjNonRes IS NULL")
+                conn.commit()
+            except:
+                print "cursor execute UPDATE Calculate Cost exception - MeansAdjNonRes table assign 1"
                 
             # Get MeansCost based on GOV2
             cursorCDMS.execute("SELECT Occupancy, MeansCost \
@@ -393,10 +405,8 @@ try:
                 ContentValPct = str(row.ContentValPct)
             
             # Update the Cost field (in thousands of U.S. Dollars)
-            userDefinedSqFt = str(450)
-            updateData = "UPDATE "+hifldtable+" SET Cost=((Area*"+MeansCost+\
-                         "*MeansAdjNonRes) + ((Area*"+MeansCost+")*"\
-                         +ContentValPct+"))/1000"
+            updateData = "UPDATE "+hifldtable+" \
+                        SET Cost=((Area*"+MeansCost+"*MeansAdjNonRes) + ((Area*"+MeansCost+")*"+ContentValPct+"))/1000"
             cursor.execute(updateData)
             conn.commit()
         except:
@@ -493,8 +503,8 @@ try:
         except:
             print " cursor execute UPDATE FLOOD BldgType exception"
             
-        # Hazus_model.dbo.flFireStationDflt; EFHL, EFHM, EFHS
-        efClassList = ["EFHS", "EFHM", "EFHL"]
+        # Hazus_model.dbo.flFireStationDflt; EFFS
+        efClassList = ["EFFS"]
         for efClass in efClassList:
             try:
                 cursor.execute("UPDATE a \
@@ -511,7 +521,7 @@ try:
             except:
                 print " cursor execute calc flFoundationType, flFirstFloorHt, flBldgDamageFnId, flContDamageFnId, flFloodProtection exception"
 
-        # Add 1 foot to firstfloorht for records whose MedianYearBuilt < EntryDate
+        # Add 1 foot to firstfloorht for records whose MedianYearBuilt > EntryDate
         try:
             cursor.execute("UPDATE a SET a.FirstFloorHt = a.FirstFloorHt + 1 \
                             FROM "+hifldtable+" a \
@@ -520,7 +530,7 @@ try:
                             FROM ["+state+"]..[flSchemeMapping] \
                             GROUP BY SUBSTRING(CensusBlock, 1,11)) b \
                             ON a.CensusTractID = b.CensusBlockTract \
-                            WHERE a.MedianYearBuilt < b.EntryDateMax")
+                            WHERE a.MedianYearBuilt > b.EntryDateMax")
             conn.commit()
         except:
             print " cursor execute firstfloor modification" 
@@ -565,58 +575,29 @@ try:
         cursor = conn.cursor()
 
         # Remove HAZUS rows
-        print " Remove HAZUS rows from hzCareFlty"
+        print " Remove HAZUS rows from hzFireStation"
         try:
             cursor.execute("TRUNCATE TABLE "+hzTable)
             conn.commit()
         except:
-            print " cursor execute Delete HAZUS from hzCareFlty exception"
+            print " cursor execute Delete HAZUS from hzFireStation exception"
         print " done"
         
-        print " Remove hazus rows from flCareFlty"
+        print " Remove hazus rows from flFireStation"
         try:
             cursor.execute("TRUNCATE TABLE "+flTable)
             conn.commit()
         except:
-            print " cursor execute Delete HAZUS from flCareFlty exception"
+            print " cursor execute Delete HAZUS from flFireStation exception"
         print " done"
         
-        print " Remove hazus rows from eqCareFlty"
+        print " Remove hazus rows from eqFireStation"
         try:
             cursor.execute("TRUNCATE TABLE "+eqTable)
             conn.commit()
         except:
-            print " cursor execute Delete HAZUS from eqCareFlty exception"
+            print " cursor execute Delete HAZUS from eqFireStation exception"
         print " done"
-
-##        # THESE WILL NEED TO BE UPDATED TO ONLY TARGET HIFLD RECORDS
-##        # ONCE ALL FIELDS IN hifld_FireStation ARE PRESENT
-##        print " Remove hifld rows from hzFireStation"
-##        try:
-##            cursor.execute("DELETE FROM "+hzTable+\
-##                           " WHERE Name is null AND Comment is not null")
-##            conn.commit()
-##        except:
-##            print " cursor execute Delete hifld from hzFireStation exception"
-##        print " done"
-##        
-##        print " Remove hifld rows from flFireStation"
-##        try:
-##            cursor.execute("DELETE FROM "+flTable+\
-##                           " WHERE BldgType is null")
-##            conn.commit()
-##        except:
-##            print " cursor execute Delete hifld from flFireStation exception"
-##        print " done"
-##
-##        print " Remove hifld rows from eqFireStation"
-##        try:
-##            cursor.execute("DELETE FROM "+eqTable+\
-##                           " WHERE FoundationType IS NOT NULL")
-##            conn.commit()
-##        except:
-##            print " cursor execute Delete hifld from eqFireStation exception"
-##        print " done"
 
         # Copy Rows from HIFLD to HAZUS hazard
         print " Copy rows from hifld_FireStation to hzFireStation..."
@@ -633,15 +614,14 @@ try:
                             Statea, \
                             PhoneNumber, \
                             Cost, \
-                            BackupPower, \
                             Latitude, \
                             Longitude, \
-                            Comment, \
                             Area, \
                             ShelterCapacity, \
                             BackupPower, \
                             Kitchen, \
-                            NumTrucks) \
+                            NumTrucks, \
+                            Comment) \
                             \
                             SELECT \
                             Shape, \
@@ -650,12 +630,11 @@ try:
                             CensusTractId, \
                             NameTrunc, \
                             AddressTRUNC, \
-                            City, \
+                            LEFT(City, 40), \
                             Zip, \
                             State, \
                             Telephone, \
                             Cost, \
-                            0, \
                             Y, \
                             X, \
                             Area, \
@@ -663,7 +642,7 @@ try:
                             BackupPower, \
                             Kitchen, \
                             NumTrucks, \
-                            NAICS_CODE \
+                            NAICSCODE \
                             \
                             FROM "+hifldTable+\
                             " WHERE FireStationId IS NOT NULL \

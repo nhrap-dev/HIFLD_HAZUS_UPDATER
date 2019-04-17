@@ -1,6 +1,6 @@
 # NiyamIT
 # COLIN LINDEMAN, GIS Developer
-# Proof of Concept - HIFLD Hospitals into HAZUS CareFlty.
+# Proof of Concept - HIFLD Local Law Enforcement Locations into HAZUS PoliceStation.
 # Last Update: 2019-04-16
 # Requirements:
 #    Python 2.7, pyodbc
@@ -27,8 +27,7 @@ print "Read config.ini file..."
 configPath = "D:\Dropbox\NiyaMIT\config.ini"
 cfgParser = ConfigParser.ConfigParser()
 cfgParser.read(configPath)
-url = cfgParser.get("HIFLD OPEN DATA URLS", "CareFlty_URL")
-url2 = cfgParser.get("HIFLD OPEN DATA URLS", "CareFlty2_URL")
+url = cfgParser.get("HIFLD OPEN DATA URLS", "PoliceStations_URL")
 userDefinedServer = cfgParser.get("SQL SERVER", "ServerName")
 UserName = cfgParser.get("SQL SERVER", "UserName")
 Password = cfgParser.get("SQL SERVER", "Password")
@@ -36,7 +35,6 @@ possibleDatabaseListRaw = cfgParser.get("DATABASE LIST", "possibleDatabaseList")
 possibleDatabaseList = []
 for database in possibleDatabaseListRaw.split(","):
     possibleDatabaseList.append(database)
-userDefinedSqFt = cfgParser.get("HOSPITALS", "BedRoomSqFt")
 print "Done"
 print
 
@@ -44,24 +42,15 @@ print
 print "Download CSV's..."
 tempDir = tempfile.gettempdir()
 #  for example: r'C:\Users\User1\AppData\Local\Temp'
-# Download CSV 1
+# Download CSV
 try:
-    tempCSVPath = os.path.join(tempDir, "hospital.csv")
+    tempCSVPath = os.path.join(tempDir, "Police_Stations.csv")
     csvFile = urllib.urlopen(url).read()
     with open(tempCSVPath, "w") as fx:
         fx.write(csvFile)
     fx.close()
 except:
     print " exception downloading csv"
-# Download CSV 2
-try:
-    tempCSV2Path = os.path.join(tempDir, "VAAdminFacilities.csv")
-    csvFile = urllib.urlopen(url2).read()
-    with open(tempCSV2Path, "w") as fx2:
-        fx2.write(csvFile)
-    fx2.close()
-except:
-    print " exception downloading csv2"
 print "Done"
 print
 
@@ -82,7 +71,7 @@ print "Done"
 print
 
 
-print "Create 'HIFLD_CareFlty' Staging Table..."
+print "Create 'hifld_PoliceStation' Staging Table..."
 try:
     for state in existingDatabaseList:
         print state
@@ -91,45 +80,29 @@ try:
         conn = pyodbc.connect(connectString, autocommit=False)
         cursor = conn.cursor()
         try:
-            if cursor.tables(table="hifld_CareFlty", tableType="TABLE").fetchone():
-                print " hifld_CareFlty already exists, dropping table..."
-                cursor.execute("DROP TABLE hifld_CareFlty")
+            if cursor.tables(table="hifld_PoliceStation", tableType="TABLE").fetchone():
+                print " hifld_PoliceStation already exists, dropping table..."
+                cursor.execute("DROP TABLE hifld_PoliceStation")
                 conn.commit()
                 print " done"
             else:
-                print " hifld_CareFlty doesn't exist"
-            print " Creating hifld_CareFlty table..."
-            createTable = "CREATE TABLE hifld_CareFlty \
-                            (ID varchar(50), \
-                            NAME varchar(250), \
-                            ADDRESS varchar(80), \
+                print " hifld_PoliceStation doesn't exist"
+            print " Creating hifld_PoliceStation table..."
+            createTable = "CREATE TABLE hifld_PoliceStation \
+                            (ID int, \
+                            NAME varchar(150), \
+                            ADDRESS varchar(50), \
                             CITY varchar(50), \
-                            STATE varchar(2), \
-                            ZIP varchar(15), \
-                            TELEPHONE varchar(30), \
-                            TYPE varchar(20), \
-                            STATUS varchar(10), \
-                            POPULATION int, \
-                            COUNTY varchar(30), \
-                            COUNTYFIPS varchar(50), \
-                            COUNTRY varchar(3), \
-                            LATITUDE numeric(38,8), \
-                            LONGITUDE numeric(38,8), \
-                            NAICS_CODE varchar(50), \
-                            NAICS_DESC varchar(255), \
-                            SOURCE varchar(255), \
-                            SOURCEDATE datetime2(7), \
-                            VAL_METHOD varchar(30), \
-                            VAL_DATE datetime2(7), \
-                            WEBSITE varchar(255), \
-                            STATE_ID varchar(50), \
-                            ALT_NAME varchar(255), \
-                            ST_FIPS varchar(50), \
-                            OWNER varchar(50), \
-                            TTL_STAFF int, \
-                            BEDS int, \
-                            TRAUMA varchar(50), \
-                            HELIPAD varchar(50))"
+                            STATE varchar(50), \
+                            ZIP int, \
+                            TELEPHONE varchar(50), \
+                            TYPE varchar(50), \
+                            COUNTY varchar(50), \
+                            Y float, \
+                            X float, \
+                            NAICSCODE int, \
+                            NAICSDESCR varchar(100), \
+                            STATE_ID varchar(50))"
             cursor.execute(createTable)
             conn.commit()
             print " done"
@@ -141,7 +114,7 @@ print "Done"
 print
 
 
-print "ADD HIFLD_CareFlty fields..."
+print "ADD hifld_PoliceStation fields..."
 try:
     for state in existingDatabaseList:
         print state
@@ -149,12 +122,12 @@ try:
                         ";Database="+state+";UID="+UserName+";PWD="+Password
         conn = pyodbc.connect(connectString, autocommit=False)
         cursor = conn.cursor()
-        hifldtable = "["+state+"]..[hifld_CareFlty]"
+        hifldtable = "["+state+"]..[hifld_PoliceStation]"
         try:
             cursor.execute("ALTER TABLE "+hifldtable+" \
-                            ADD CareFltyId varchar(8), \
+                            ADD PoliceStationId varchar(8), \
                             EfClass varchar(5), \
-                            Usage varchar(10), \
+                            Usage varchar(50), \
                             Cost numeric(38,8), \
                             CalcBldgSqFt int, \
                             MeansAdjNonRes real, \
@@ -176,50 +149,37 @@ try:
                             CommentTRUNC nvarchar(40), \
                             BldgType nvarchar(50), \
                             AddressTRUNC nvarchar(40), \
-                            FIPSCountyID nvarchar(5)")
+                            FIPSCountyID nvarchar(5), \
+                            Area numeric(38,8), \
+                            Kitchen smallint, \
+                            BackupPower smallint, \
+                            ShelterCapacity int")
             conn.commit()
-        except:
-            print " cursor ALTER TABLE exception"
+        except Exception as e:
+            print "  cursor ALTER TABLE exception: {}".format((e))
 except:
-    print " exception ADD hifld_CareFlty fields"
+    print " exception ADD hifld_PoliceStation fields"
 print "Done"
 print
 
 
 print "Copy Downloaded HIFLD CSV to SQL Staging Table..."
-# CSV 1
 try:
     # Define the columns that data will be inserted into
-    hifld_CareFlty_Columns = "ID, \
-                            NAME, \
-                            ADDRESS, \
-                            CITY, \
-                            STATE, \
-                            ZIP, \
-                            TELEPHONE, \
-                            TYPE, \
-                            STATUS, \
-                            POPULATION, \
-                            COUNTY, \
-                            COUNTYFIPS, \
-                            COUNTRY, \
-                            LATITUDE, \
-                            LONGITUDE, \
-                            NAICS_CODE, \
-                            NAICS_DESC, \
-                            SOURCE, \
-                            SOURCEDATE, \
-                            VAL_METHOD, \
-                            VAL_DATE, \
-                            WEBSITE, \
-                            STATE_ID, \
-                            ALT_NAME, \
-                            ST_FIPS, \
-                            OWNER, \
-                            TTL_STAFF, \
-                            BEDS, \
-                            TRAUMA, \
-                            HELIPAD"
+    hifld_PoliceStation_Columns = "ID, \
+                                NAME, \
+                                ADDRESS, \
+                                CITY, \
+                                STATE, \
+                                ZIP, \
+                                TELEPHONE, \
+                                TYPE, \
+                                COUNTY, \
+                                Y, \
+                                X, \
+                                NAICSCODE, \
+                                NAICSDESCR, \
+                                STATE_ID"
     for state in existingDatabaseList:
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
@@ -234,15 +194,13 @@ try:
                 if row["STATE"] == state:
                     # there are several records with funky ANSI 
                     # character, but not utf-8. Possibly not ASCII character.
-                    csvAddress = row["ADDRESS"].decode("utf-8").encode("ascii", "ignore")
-                    csvName = row["NAME"].decode("utf-8").encode("ascii", "ignore")
-                    csvCity = row["CITY"].decode("utf-8").encode("ascii", "ignore")
-                    csvAlt_Name = row["ALT_NAME"].decode("utf-8").encode("ascii", "ignore")
-                    csvTelephone = row["TELEPHONE"].decode("utf-8").encode("ascii", "ignore")
-                    csvWebsite = row["WEBSITE"].decode("utf-8").encode("ascii", "ignore")
+##                    csvAddress = row["ADDRESS"].decode("utf-8").encode("ascii", "ignore")
+##                    csvName = row["NAME"].decode("utf-8").encode("ascii", "ignore")
+##                    csvCity = row["CITY"].decode("utf-8").encode("ascii", "ignore")
+##                    csvTelephone = row["TELEPHONE"].decode("utf-8").encode("ascii", "ignore")
                     # This list order must match the order of the created table that it's being inserted into                 
-                    sqlInsertData = "INSERT INTO ["+state+"]..[hifld_CareFlty] ("\
-                                    +hifld_CareFlty_Columns+") \
+                    sqlInsertData = "INSERT INTO ["+state+"]..[hifld_PoliceStation] ("\
+                                    +hifld_PoliceStation_Columns+") \
                                     VALUES \
                                     (?, \
                                     ?, \
@@ -257,173 +215,95 @@ try:
                                     ?, \
                                     ?, \
                                     ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
                                     ?)"
                     try:
-                        cursor.execute(sqlInsertData, \
+                        cursor.execute(sqlInsertData,
                                        [row["ID"], \
-                                        csvName, \
-                                        csvAddress, \
-                                        csvCity, \
+                                        row["NAME"], \
+                                        row["ADDRESS"], \
+                                        row["CITY"], \
                                         row["STATE"], \
                                         row["ZIP"], \
-                                        csvTelephone, \
+                                        row["TELEPHONE"], \
                                         row["TYPE"], \
-                                        row["STATUS"], \
-                                        row["POPULATION"],\
                                         row["COUNTY"], \
-                                        row["COUNTYFIPS"],\
-                                        row["COUNTRY"], \
-                                        row["LATITUDE"], \
-                                        row["LONGITUDE"], \
-                                        row["NAICS_CODE"], \
-                                        row["NAICS_DESC"], \
-                                        row["SOURCE"], \
-                                        row["SOURCEDATE"], \
-                                        row["VAL_METHOD"], \
-                                        row["VAL_DATE"], \
-                                        csvWebsite, \
-                                        row["STATE_ID"], \
-                                        csvAlt_Name, \
-                                        row["ST_FIPS"], \
-                                        row["OWNER"], \
-                                        row["TTL_STAFF"], \
-                                        row["BEDS"], \
-                                        row["TRAUMA"], \
-                                        row["HELIPAD"]])
-                    except:
-                        print " cursor execute insertData CSV exception: ID {}".format(row["ID"])
+                                        row["Y"], \
+                                        row["X"], \
+                                        row["NAICSCODE"], \
+                                        row["NAICSDESCR"], \
+                                        row["STATE_ID"]])
+                    except Exception as e:
+                        print " cursor execute insertData CSV exception: ID {}, {}".format(row["ID"], (e))
             conn.commit()
         except:
             print " csv dict exception"
 except:
     print " exception Copy Downloaded HIFLD CSV to Staging Table"
 print "Done"
-# CSV 2
-try:
-    # Define the columns that data will be inserted into
-    hifld_CareFlty_Columns = "NAME, \
-                            ADDRESS, \
-                            CITY, \
-                            STATE, \
-                            ZIP, \
-                            COUNTY, \
-                            LATITUDE, \
-                            LONGITUDE, \
-                            NAICS_CODE, \
-                            NAICS_DESC, \
-                            COUNTYFIPS, \
-                            BEDS, \
-                            MedianYearBuilt"
-    for state in existingDatabaseList:
-        print state
-        connectString = "Driver={SQL Server};Server="+userDefinedServer+\
-                        ";Database="+state+";UID="+UserName+";PWD="+Password
-        conn = pyodbc.connect(connectString, autocommit=False)
-        cursor = conn.cursor()
-        # Iterate CSV and insert into sql
-        try:
-            f = open(tempCSV2Path)
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row["STATE"] == state:
-                    sqlInsertData = "INSERT INTO ["+state+"]..[hifld_CareFlty] ("\
-                                    +hifld_CareFlty_Columns+") \
-                                    VALUES \
-                                    (?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    -999, \
-                                    ?)"
-                    try:
-                        cursor.execute(sqlInsertData, \
-                                       [row["NAME"], \
-                                        row["ADDRESS"], \
-                                        row["CITY"], \
-                                        row["STATE"], \
-                                        row["ZIP"], \
-                                        row["COUNTY"], \
-                                        row["LATITUDE"], \
-                                        row["LONGITUDE"],\
-                                        row["NAICSCODE"], \
-                                        row["NAICSDESCR"], \
-                                        row["FIPS"], \
-                                        row["OPER_DATE"][:4]])
-                    except:
-                        print " cursor execute insertData CSV2 exception: NAME {}".format(row["NAME"])
-            conn.commit()
-        except:
-            print " csv dict exception 2"
-except:
-    print " exception Copy Downloaded HIFLD CSV2 to Staging Table"
-print "Done"
 print
         
 
-print "Calculate HIFLD_CareFlty fields..."
+print "Calculate hifld_PoliceStation fields..."
 try:
     for state in existingDatabaseList:
         print state
-        connectString = "Driver={SQL Server};Server="+userDefinedServer+\
-                        ";Database="+state+";UID="+UserName+";PWD="+Password
+        connectString = "Driver={SQL Server};Server="+userDefinedServer+";\
+                        Database="+state+";UID="+UserName+";PWD="+Password
         conn = pyodbc.connect(connectString, autocommit=False)
         cursor = conn.cursor()
-        hifldtable = "["+state+"]..[hifld_CareFlty]"
+        hifldtable = "["+state+"]..[hifld_PoliceStation]"
 
-        # CareFltyId (State abbreviation plus 6 digits eg WA123456,
+        # PoliceStationId (State abbreviation plus 6 digits eg WA123456,
         # this must be unique and will persist across four tables.
         # IDSeq should be unique, non null and int)
         try:
-            cursor.execute("UPDATE "+hifldtable+" SET CareFltyId = '"+state+\
+            cursor.execute("UPDATE "+hifldtable+" SET PoliceStationId = '"+state+\
                            "' + RIGHT('000000'+cast(IDseq as varchar(6)),6)")
             conn.commit()
         except:
-            print " cursor execute UPDATE CareFltyId"
+            print " cursor execute UPDATE PoliceStationId"
 
-        # Usage (set to Hospital)
+        # Kitchen
         try:
-            updateData = "UPDATE "+hifldtable+" SET Usage='Hospital'"
+            updateData = "UPDATE "+hifldtable+" SET Kitchen = 0"
+            cursor.execute(updateData)
+            conn.commit()
+        except:
+            print " cursor execute UPDATE Kitchen exception"
+
+        # BackupPower
+        try:
+            updateData = "UPDATE "+hifldtable+" SET BackupPower = 0"
+            cursor.execute(updateData)
+            conn.commit()
+        except:
+            print " cursor execute UPDATE BackupPower exception"
+
+        # ShelterCapacity
+        try:
+            updateData = "UPDATE "+hifldtable+" SET ShelterCapacity = 0"
+            cursor.execute(updateData)
+            conn.commit()
+        except:
+            print " cursor execute UPDATE ShelterCapacity exception"
+
+        # Usage
+        try:
+            updateData = "UPDATE "+hifldtable+" SET Usage='PoliceStation'"
             cursor.execute(updateData)
             conn.commit()
         except:
             print " cursor execute UPDATE Usage exception"
 
-        # EfClass (-999 should be EFHS)
+        # EfClass
         try:
-            updateData = "UPDATE "+hifldtable+" SET EfClass= \
-                        (CASE WHEN BEDS < 50 THEN 'EFHS' \
-                        WHEN BEDS >= 50 AND BEDS <= 150 THEN 'EFHM' \
-                        WHEN BEDS > 150 THEN 'EFHL' \
-                        ELSE '' END)"
+            updateData = "UPDATE "+hifldtable+" SET EfClass = 'EFPS'"
             cursor.execute(updateData)
             conn.commit()
         except:
             print " cursor execute UPDATE EfClass exception"
 
-        # Building SqFt
+        # Area
         try:
             # get value to use as default if another value is not found
             connectStringCDMS = "Driver={SQL Server};Server="+userDefinedServer+\
@@ -432,30 +312,27 @@ try:
             cursorCDMS = connCDMS.cursor()
             cursorCDMS.execute("SELECT Occupancy,SquareFootage \
                                 FROM [CDMS]..[hzSqftFactors] \
-                                WHERE Occupancy = 'COM6'")
+                                WHERE Occupancy = 'GOV2'")
             rows = cursorCDMS.fetchall()
             for row in rows:
                 HazusDefaultSqFt = str(row.SquareFootage)
-            # Update the CalcBldgSqFt field
-            updateData = "UPDATE "+hifldtable+" \
-                        SET CalcBldgSqFt = \
-                        (CASE WHEN BEDS != -999 THEN BEDS*"+userDefinedSqFt+\
-                        " ELSE "+HazusDefaultSqFt+" END)"
+            # Update the Area field
+            updateData = "UPDATE "+hifldtable+" SET Area = "+HazusDefaultSqFt
             cursor.execute(updateData)
             conn.commit()
-        except:
-            print " cursor execute UPDATE CalcBldgSqFt exception"
+        except Exception as e:
+            print " cursor execute Update Area exception: {}".format((e))
 
         # CENSUS TRACTS ID      
         # Calculate Shape
         try:
             cursor.execute("UPDATE "+hifldtable+\
-                           " SET Shape = geometry::Point(LONGITUDE, LATITUDE, 4326)")
+                           " SET Shape = geometry::Point(X, Y, 4326)")
             conn.commit()
         except:
             print " cursor execute UPDATE Shape exception"
         # Calculate TractID field...
-        # To get all tract id's from hzTract based on the intersection of hzcareflty and hztract...
+        # To get all tract id's from hzTract based on the intersection of hzPoliceStation and hztract...
         try:
             cursor.execute("UPDATE a \
                             SET a.CensusTractID = b.tract, \
@@ -503,25 +380,25 @@ try:
             except:
                 print "cursor execute UPDATE Calculate Cost exception - MeansAdjNonRes table assign 1"
                 
-            # Get MeansCost based on COM6
+            # Get MeansCost based on GOV2
             cursorCDMS.execute("SELECT Occupancy, MeansCost \
                                 FROM [CDMS]..[hzReplacementCost] \
-                                WHERE Occupancy = 'COM6'")
+                                WHERE Occupancy = 'GOV2'")
             rows = cursorCDMS.fetchall()
             for row in rows:
                 MeansCost = str(row.MeansCost)
 
-            # Get ContentValPct based on COM6
+            # Get ContentValPct based on GOV2
             cursorCDMS.execute("SELECT Occupancy, ContentValPct \
                                 FROM [CDMS]..[hzPctContentOfStructureValue] \
-                                WHERE Occupancy = 'COM6'")
+                                WHERE Occupancy = 'GOV2'")
             rows = cursorCDMS.fetchall()
             for row in rows:
                 ContentValPct = str(row.ContentValPct)
             
             # Update the Cost field (in thousands of U.S. Dollars)
             updateData = "UPDATE "+hifldtable+" \
-                        SET Cost=((CalcBldgSqFt*"+MeansCost+"*MeansAdjNonRes) + ((CalcBldgSqFt*"+MeansCost+")*"+ContentValPct+"))/1000"
+                        SET Cost=((Area*"+MeansCost+"*MeansAdjNonRes) + ((Area*"+MeansCost+")*"+ContentValPct+"))/1000"
             cursor.execute(updateData)
             conn.commit()
         except:
@@ -529,7 +406,6 @@ try:
 
         # MedianYearBuilt
         try:
-            # WA.dbo.hzDemographicsT; need to lookup by census tract id.
             cursor.execute("UPDATE a SET a.MedianYearBuilt = b.MedianYearBuilt \
                             FROM ["+state+"]..[hzDemographicsT] b \
                             INNER JOIN "+hifldtable+" a ON b.Tract = a.CensusTractID \
@@ -573,36 +449,36 @@ try:
         # eqBldgType
         # Get State eqBldgTypes
         try:
-            cursor.execute("SELECT MCHCHS_U_eqCareFlty FROM [CDMS]..[eqEFBldgTypeDefault] \
+            cursor.execute("SELECT MCHCHS_U_eqPoliceStation FROM [CDMS]..[eqEFBldgTypeDefault] \
                             WHERE StateID = '"+state+"'")
             rows = cursor.fetchall()
             for row in rows:
-                MCHCHS_U_eqCareFlty = row.MCHCHS_U_eqCareFlty
-            cursor.execute("SELECT MCHCHS_R_eqCareFlty FROM [CDMS]..[eqEFBldgTypeDefault] \
+                MCHCHS_U_eqPoliceStation = row.MCHCHS_U_eqPoliceStation
+            cursor.execute("SELECT MCHCHS_R_eqPoliceStation FROM [CDMS]..[eqEFBldgTypeDefault] \
                             WHERE StateID = '"+state+"'")
             rows = cursor.fetchall()
             for row in rows:
-                MCHCHS_R_eqCareFlty = row.MCHCHS_R_eqCareFlty
-            cursor.execute("SELECT PCLC_U_eqCareFlty FROM [CDMS]..[eqEFBldgTypeDefault] \
+                MCHCHS_R_eqPoliceStation = row.MCHCHS_R_eqPoliceStation
+            cursor.execute("SELECT PCLC_U_eqPoliceStation FROM [CDMS]..[eqEFBldgTypeDefault] \
                             WHERE StateID = '"+state+"'")
             rows = cursor.fetchall()
             for row in rows:
-                PCLC_U_eqCareFlty = row.PCLC_U_eqCareFlty
-            cursor.execute("SELECT PCLC_R_eqCareFlty FROM [CDMS]..[eqEFBldgTypeDefault] \
+                PCLC_U_eqPoliceStation = row.PCLC_U_eqPoliceStation
+            cursor.execute("SELECT PCLC_R_eqPoliceStation FROM [CDMS]..[eqEFBldgTypeDefault] \
                             WHERE StateID = '"+state+"'")
             rows = cursor.fetchall()
             for row in rows:
-                PCLC_R_eqCareFlty = row.PCLC_R_eqCareFlty
+                PCLC_R_eqPoliceStation = row.PCLC_R_eqPoliceStation
         except:
             print " cursor execute GET State eqBldgTypes exception"
             
         # Set eqBldgType
         try:
             cursor.execute("UPDATE "+hifldtable+" SET eqBldgType=(CASE \
-                            WHEN UATYP='U' AND (eqDesignLevel='MC' OR eqDesignLevel='HC' OR eqDesignLevel='HS') THEN '"+MCHCHS_U_eqCareFlty+"' \
-                            WHEN UATYP='R' AND (eqDesignLevel='MC' OR eqDesignLevel='HC' OR eqDesignLevel='HS') THEN '"+MCHCHS_R_eqCareFlty+"' \
-                            WHEN UATYP='U' AND (eqDesignLevel='PC' OR eqDesignLevel='LC') THEN '"+PCLC_U_eqCareFlty+"' \
-                            WHEN UATYP='R' AND (eqDesignLevel='PC' OR eqDesignLevel='LC') THEN '"+PCLC_R_eqCareFlty+"' \
+                            WHEN UATYP='U' AND (eqDesignLevel='MC' OR eqDesignLevel='HC' OR eqDesignLevel='HS') THEN '"+MCHCHS_U_eqPoliceStation+"' \
+                            WHEN UATYP='R' AND (eqDesignLevel='MC' OR eqDesignLevel='HC' OR eqDesignLevel='HS') THEN '"+MCHCHS_R_eqPoliceStation+"' \
+                            WHEN UATYP='U' AND (eqDesignLevel='PC' OR eqDesignLevel='LC') THEN '"+PCLC_U_eqPoliceStation+"' \
+                            WHEN UATYP='R' AND (eqDesignLevel='PC' OR eqDesignLevel='LC') THEN '"+PCLC_R_eqPoliceStation+"' \
                             ELSE '' END)")
             conn.commit()
         except:
@@ -619,8 +495,8 @@ try:
         except:
             print " cursor execute UPDATE FLOOD BldgType exception"
             
-        # Hazus_model.dbo.flCareFltyDflt; EFHL, EFHM, EFHS
-        efClassList = ["EFHS", "EFHM", "EFHL"]
+        # Hazus_model.dbo.flPoliceStationDflt; EFPS
+        efClassList = ["EFPS"]
         for efClass in efClassList:
             try:
                 cursor.execute("UPDATE a \
@@ -629,7 +505,7 @@ try:
                                 a.BldgDamageFnId=b.BldgDamageFnId, \
                                 a.ContDamageFnId=b.ContDamageFnId, \
                                 a.FloodProtection=b.FloodProtection \
-                                FROM [Hazus_model]..[flCareFltyDflt] b \
+                                FROM [Hazus_model]..[flPoliceStationDflt] b \
                                 INNER JOIN "+hifldtable+" a \
                                 ON b.EFClass = a.EfClass \
                                 WHERE a.EfClass = '"+efClass+"'")
@@ -659,10 +535,6 @@ try:
                             (CASE WHEN LEN(NAME)>40 THEN CONCAT(LEFT(NAME,37),'...') \
                             ELSE NAME END)")
             cursor.execute("UPDATE "+hifldtable\
-                           +" SET ContactTRUNC = \
-                            (CASE WHEN LEN(SOURCE)>40 THEN CONCAT(LEFT(SOURCE,37),'...') \
-                            ELSE SOURCE END)")
-            cursor.execute("UPDATE "+hifldtable\
                            +" SET CommentTRUNC = \
                             (CASE WHEN LEN(ID)>40 THEN CONCAT(LEFT(ID,37),'...') \
                             ELSE ID END)")
@@ -671,11 +543,11 @@ try:
                             (CASE WHEN LEN(ADDRESS)>40 THEN CONCAT(LEFT(ADDRESS,37),'...') \
                             ELSE ADDRESS END)")
             conn.commit()
-        except:
-            print " cursor execute TRUNC Fields to be under 40 exception"
+        except Exception as e:
+            print " cursor execute TRUNC Fields to be under 40 exception: {}".format((e))
             
 except:
-    print " exception Calculate hifld_CareFlty Fields"
+    print " exception Calculate hifld_PoliceStation Fields"
 print "Done"
 print
 
@@ -684,10 +556,10 @@ print "Move data from the HIFLD staging table to the HAZUS tables."
 try:
     for state in existingDatabaseList:
         print state
-        hifldTable = "["+state+"]..[hifld_CareFlty]"
-        hzTable = "["+state+"]..[hzCareFlty]"
-        flTable = "["+state+"]..[flCareFlty]"
-        eqTable = "["+state+"]..[eqCareFlty]"
+        hifldTable = "["+state+"]..[hifld_PoliceStation]"
+        hzTable = "["+state+"]..[hzPoliceStation]"
+        flTable = "["+state+"]..[flPoliceStation]"
+        eqTable = "["+state+"]..[eqPoliceStation]"
         
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
                         ";Database="+state+";UID="+UserName+";PWD="+Password
@@ -695,36 +567,36 @@ try:
         cursor = conn.cursor()
 
         # Remove HAZUS rows
-        print " Remove HAZUS rows from hzCareFlty"
+        print " Remove HAZUS rows from hzPoliceStation"
         try:
             cursor.execute("TRUNCATE TABLE "+hzTable)
             conn.commit()
         except:
-            print " cursor execute Delete HAZUS from hzCareFlty exception"
+            print " cursor execute Delete HAZUS from hzPoliceStation exception"
         print " done"
         
-        print " Remove hazus rows from flCareFlty"
+        print " Remove hazus rows from flPoliceStation"
         try:
             cursor.execute("TRUNCATE TABLE "+flTable)
             conn.commit()
         except:
-            print " cursor execute Delete HAZUS from flCareFlty exception"
+            print " cursor execute Delete HAZUS from flPoliceStation exception"
         print " done"
         
-        print " Remove hazus rows from eqCareFlty"
+        print " Remove hazus rows from eqPoliceStation"
         try:
             cursor.execute("TRUNCATE TABLE "+eqTable)
             conn.commit()
         except:
-            print " cursor execute Delete HAZUS from eqCareFlty exception"
+            print " cursor execute Delete HAZUS from eqPoliceStations exception"
         print " done"
 
         # Copy Rows from HIFLD to HAZUS hazard
-        print " Copy rows from hifld_CareFlty to hzCareFlty..."
+        print " Copy rows from hifld_PoliceStation to hzPoliceStation..."
         try:
             cursor.execute("INSERT INTO "+hzTable+" \
                             (Shape, \
-                            CareFltyId, \
+                            PoliceStationId, \
                             EfClass, \
                             Tract, \
                             Name, \
@@ -733,47 +605,49 @@ try:
                             Zipcode, \
                             Statea, \
                             PhoneNumber, \
-                            Usage, \
                             Cost, \
-                            BackupPower, \
-                            NumBeds, \
                             Latitude, \
                             Longitude, \
+                            Area, \
+                            ShelterCapacity, \
+                            BackupPower, \
+                            Kitchen, \
                             Comment) \
                             \
                             SELECT \
                             Shape, \
-                            CareFltyId, \
+                            PoliceStationId, \
                             EfClass, \
                             CensusTractId, \
-                            LEFT(Name,40), \
+                            NameTrunc, \
                             AddressTRUNC, \
                             LEFT(City, 40), \
                             Zip, \
                             State, \
                             Telephone, \
-                            Usage, \
                             Cost, \
-                            0, \
-                            Beds, \
-                            Latitude, \
-                            Longitude, \
-                            NAICS_CODE \
+                            Y, \
+                            X, \
+                            Area, \
+                            ShelterCapacity, \
+                            BackupPower, \
+                            Kitchen, \
+                            NAICSCODE \
                             \
                             FROM "+hifldTable+\
-                            " WHERE CareFltyId IS NOT NULL \
+                            " WHERE PoliceStationId IS NOT NULL \
                             AND EfClass IS NOT NULL \
                             AND CensusTractId IS NOT NULL")
             conn.commit()
         except Exception as e:
-            print " cursor execute Insert Into hzCareFlty exception: {}".format((e))
+            print " cursor execute Insert Into hzPoliceStation exception: {}".format((e))
         print " done"
         
         # Copy Rows from HIFLD to HAZUS flood
-        print " Copy rows from hifld_CareFlty to flCareFlty..."
+        print " Copy rows from hifld_PoliceStation to flPoliceStation..."
         try:
             cursor.execute("INSERT INTO "+flTable+"\
-                            (CareFltyId, \
+                            (PoliceStationId, \
                             BldgType, \
                             DesignLevel, \
                             FoundationType, \
@@ -783,7 +657,7 @@ try:
                             FloodProtection) \
                             \
                             SELECT \
-                            CareFltyId, \
+                            PoliceStationId, \
                             eqBldgType, \
                             LEFT(eqDesignLevel,1), \
                             FoundationType, \
@@ -795,14 +669,14 @@ try:
                             FROM "+hifldTable)
             conn.commit()
         except Exception as e:
-            print " cursor execute Insert Into flCareFlty exception: {}".format((e))
+            print " cursor execute Insert Into flPoliceStation exception: {}".format((e))
         print " done"
         
         # Copy Rows from HIFLD to HAZUS earthquake
-        print " Copy rows from hifld_CareFlty to eqCareFlty..."
+        print " Copy rows from hifld_PoliceStation to eqPoliceStation..."
         try:
             cursor.execute("INSERT INTO "+eqTable+" \
-                            (CareFltyId, \
+                            (PoliceStationId, \
                             eqBldgType, \
                             DesignLevel, \
                             FoundationType, \
@@ -812,7 +686,7 @@ try:
                             WaterDepth) \
                             \
                             SELECT \
-                            CareFltyId, \
+                            PoliceStationId, \
                             eqBldgType, \
                             eqDesignLevel, \
                             0, \
@@ -823,7 +697,7 @@ try:
                             FROM "+hifldTable)
             conn.commit()
         except Exception as e:
-            print " cursor execute Insert Into eqCareFlty exception: {}".format((e))
+            print " cursor execute Insert Into eqPoliceStation exception: {}".format((e))
         print " done"
         
 except:
@@ -835,7 +709,7 @@ print
 ##try:
 ##    for state in existingDatabaseList:
 ##        print state
-##        hifldTable = "["+state+"]..[hifld_CareFlty]"
+##        hifldTable = "["+state+"]..[hifld_PoliceStation]"
 ##        # Drop Shape fields...
 ##        try:
 ##            cursor.execute("ALTER TABLE "+hifldTable+" DROP COLUMN Shape")
@@ -844,7 +718,6 @@ print
 ##            print " cursor execute DROP hifldTable Shape exception"
 ##except:
 ##    print " exception Clean up Shape field"
-
 
     
 print "Big Done."
