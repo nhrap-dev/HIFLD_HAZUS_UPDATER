@@ -30,6 +30,7 @@ cfgParser.read(configPath)
 url = cfgParser.get("HIFLD OPEN DATA URLS", "School_URL")
 url2 = cfgParser.get("HIFLD OPEN DATA URLS", "School2_URL")
 url3 = cfgParser.get("HIFLD OPEN DATA URLS", "School3_URL")
+url4 = cfgParser.get("HIFLD OPEN DATA URLS", "School4_URL")
 userDefinedServer = cfgParser.get("SQL SERVER", "ServerName")
 UserName = cfgParser.get("SQL SERVER", "UserName")
 Password = cfgParser.get("SQL SERVER", "Password")
@@ -58,9 +59,9 @@ print " Done"
 try:
     tempCSVPath2 = os.path.join(tempDir, "PrivateSchools.csv")
     csvFile2 = urllib.urlopen(url2).read()
-    with open(tempCSVPath, "w") as fx:
-        fx.write(csvFile)
-    fx.close()
+    with open(tempCSVPath2, "w") as fx2:
+        fx2.write(csvFile2)
+    fx2.close()
 except:
     print " exception downloading csv 2"
 print " Done"
@@ -68,9 +69,9 @@ print " Done"
 try:
     tempCSVPath3 = os.path.join(tempDir, "CollegesAndUniversities.csv")
     csvFile3 = urllib.urlopen(url3).read()
-    with open(tempCSVPath, "w") as fx:
-        fx.write(csvFile)
-    fx.close()
+    with open(tempCSVPath3, "w") as fx3:
+        fx3.write(csvFile3)
+    fx3.close()
 except:
     print " exception downloading csv 3"
 print " Done" 
@@ -78,9 +79,9 @@ print " Done"
 try:
     tempCSVPath4 = os.path.join(tempDir, "SupplementalColleges.csv")
     csvFile4 = urllib.urlopen(url4).read()
-    with open(tempCSVPath, "w") as fx:
-        fx.write(csvFile)
-    fx.close()
+    with open(tempCSVPath4, "w") as fx4:
+        fx4.write(csvFile4)
+    fx4.close()
 except:
     print " exception downloading csv 4"
 print " Done"
@@ -121,7 +122,7 @@ try:
                 print " hifld_School doesn't exist"
             print " Creating hifld_School table..."
             createTable = "CREATE TABLE hifld_School \
-                            (ID int, \
+                            (ID varchar(150), \
                             NAME varchar(150), \
                             ADDRESS varchar(50), \
                             CITY varchar(50), \
@@ -133,8 +134,7 @@ try:
                             Y float, \
                             X float, \
                             NAICSCODE int, \
-                            NAICSDESCR varchar(100), \
-                            STATE_ID varchar(50))"
+                            NAICSDESCR varchar(100))"
             cursor.execute(createTable)
             conn.commit()
             print " done"
@@ -187,7 +187,8 @@ try:
                             Area numeric(38,8), \
                             Kitchen smallint, \
                             BackupPower smallint, \
-                            ShelterCapacity int")
+                            ShelterCapacity int,\
+                            NumStudents smallint")
             conn.commit()
         except Exception as e:
             print "  cursor ALTER TABLE exception: {}".format((e))
@@ -197,23 +198,24 @@ print "Done"
 print
 
 
-print "Copy Downloaded HIFLD School CSV to SQL Staging Table..."
+print "Copy Downloaded HIFLD Public School CSV to SQL Staging Table..."
 try:
     # Define the columns that data will be inserted into
     hifld_School_Columns = "ID, \
-                                NAME, \
-                                ADDRESS, \
-                                CITY, \
-                                STATE, \
-                                ZIP, \
-                                TELEPHONE, \
-                                TYPE, \
-                                COUNTY, \
-                                Y, \
-                                X, \
-                                NAICSCODE, \
-                                NAICSDESCR, \
-                                STATE_ID"
+                            NAME, \
+                            ADDRESS, \
+                            CITY, \
+                            STATE, \
+                            ZIP, \
+                            TELEPHONE, \
+                            TYPE, \
+                            COUNTY, \
+                            Y, \
+                            X, \
+                            NAICSCODE, \
+                            NAICSDESCR, \
+                            NumStudents, \
+                            EfClass"
     for state in existingDatabaseList:
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
@@ -226,12 +228,6 @@ try:
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
-                    # there are several records with funky ANSI 
-                    # character, but not utf-8. Possibly not ASCII character.
-##                    csvAddress = row["ADDRESS"].decode("utf-8").encode("ascii", "ignore")
-##                    csvName = row["NAME"].decode("utf-8").encode("ascii", "ignore")
-##                    csvCity = row["CITY"].decode("utf-8").encode("ascii", "ignore")
-##                    csvTelephone = row["TELEPHONE"].decode("utf-8").encode("ascii", "ignore")
                     # This list order must match the order of the created table that it's being inserted into                 
                     sqlInsertData = "INSERT INTO ["+state+"]..[hifld_School] ("\
                                     +hifld_School_Columns+") \
@@ -249,10 +245,11 @@ try:
                                     ?, \
                                     ?, \
                                     ?, \
+                                    ?, \
                                     ?)"
                     try:
                         cursor.execute(sqlInsertData,
-                                       [row["ID"], \
+                                       [row["NCESID"], \
                                         row["NAME"], \
                                         row["ADDRESS"], \
                                         row["CITY"], \
@@ -262,31 +259,42 @@ try:
                                         row["TYPE"], \
                                         row["COUNTY"], \
                                         row["Y"], \
-                                        row["X"], \
-                                        row["NAICSCODE"], \
-                                        row["NAICSDESCR"], \
-                                        row["STATE_ID"]])
+                                        row["LONGITUDE"], \
+                                        row["NAICS_CODE"], \
+                                        row["NAICS_DESC"],
+                                        row["ENROLLMENT"], \
+                                        "EFS1"])
                     except Exception as e:
-                        print " cursor execute insertData CSV exception: ID {}, {}".format(row["ID"], (e))
+                        print " cursor execute insertData CSV exception: ID {}, {}".format(row["NCESID"], (e))
+                        print row
             conn.commit()
-        except:
-            print " csv dict exception"
+        except Exception as e:
+            print " csv dict exception: {}".format((e))
+            print row
 except:
     print " exception Copy Downloaded HIFLD CSV to Staging Table"
 print "Done"
 print
         
 
-print "Copy Downloaded HIFLD School CSV2 to SQL Staging Table..."
+print "Copy Downloaded HIFLD Private School CSV2 to SQL Staging Table..."
 try:
     # Define the columns that data will be inserted into
-    hifld_School_Columns = "NAME, \
+    hifld_School_Columns = "ID, \
+                                NAME, \
+                                ADDRESS, \
                                 CITY, \
                                 STATE, \
-                                ZIPCODE, \
-                                PHONE, \
+                                ZIP, \
+                                TELEPHONE, \
+                                TYPE, \
+                                COUNTY, \
                                 Y, \
-                                X"
+                                X, \
+                                NAICSCODE, \
+                                NAICSDESCR, \
+                                NumStudents, \
+                                EfClass"
     for state in existingDatabaseList:
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
@@ -309,19 +317,34 @@ try:
                                     ?, \
                                     ?, \
                                     ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
                                     ?)"
                     try:
                         cursor.execute(sqlInsertData,
-                                       [row["NAME"], \
-                                        row["STREET"], \
+                                       [row["NCESID"], \
+                                        row["NAME"], \
+                                        row["ADDRESS"], \
                                         row["CITY"], \
                                         row["STATE"], \
                                         row["ZIP"], \
                                         row["TELEPHONE"], \
+                                        row["TYPE"], \
+                                        row["COUNTY"], \
                                         row["Y"], \
-                                        row["X"]])
+                                        row["LONGITUDE"], \
+                                        row["NAICS_CODE"], \
+                                        row["NAICS_DESC"],
+                                        row["ENROLLMENT"],
+                                        "EFS1"])
                     except Exception as e:
-                        print " cursor execute insertData CSV2 exception: ID {}, {}".format(row["ID"], (e))
+                        print " cursor execute insertData CSV2 exception: ID {}, {}".format(row["NCESID"], (e))
             conn.commit()
         except:
             print " csv2 dict exception"
@@ -330,17 +353,25 @@ except:
 print "Done"
 print
 
-print "Copy Downloaded HIFLD School CSV3 to SQL Staging Table..."
+
+print "Copy Downloaded HIFLD Colleges and Universities CSV3 to SQL Staging Table..."
 try:
     # Define the columns that data will be inserted into
-    hifld_School_Columns = "NAME, \
+    hifld_School_Columns = "ID, \
+                                NAME, \
                                 ADDRESS, \
                                 CITY, \
                                 STATE, \
                                 ZIP, \
+                                TELEPHONE, \
                                 TYPE, \
+                                COUNTY, \
                                 Y, \
-                                X"
+                                X, \
+                                NAICSCODE, \
+                                NAICSDESCR, \
+                                NumStudents, \
+                                EfClass"
     for state in existingDatabaseList:
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
@@ -364,19 +395,33 @@ try:
                                     ?, \
                                     ?, \
                                     ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
                                     ?)"
                     try:
                         cursor.execute(sqlInsertData,
-                                       [row["Name"], \
-                                        row["ST_ADDR"], \
-                                        row["CITY_NAME"], \
+                                       [row["IPEDSID"], \
+                                        row["NAME"], \
+                                        row["ADDRESS"], \
+                                        row["CITY"], \
                                         row["STATE"], \
                                         row["ZIP"], \
+                                        row["TELEPHONE"], \
                                         row["TYPE"], \
+                                        row["COUNTY"], \
                                         row["Y"], \
-                                        row["X"]])
+                                        row["LONGITUDE"], \
+                                        row["NAICS_CODE"], \
+                                        row["NAICS_DESC"],
+                                        row["TOT_ENROLL"], \
+                                        "EFS2"])
                     except Exception as e:
-                        print " cursor execute insertData CSV3 exception: ID {}, {}".format(row["ID"], (e))
+                        print " cursor execute insertData CSV3 exception: ID {}, {}".format(row["IPEDSID"], (e))
             conn.commit()
         except:
             print " csv3 dict exception"
@@ -385,17 +430,24 @@ except:
 print "Done"
 print
 
-print "Copy Downloaded HIFLD School CSV4 to SQL Staging Table..."
+print "Copy Downloaded HIFLD Supplmental Colleges CSV4 to SQL Staging Table..."
 try:
     # Define the columns that data will be inserted into
-    hifld_School_Columns = "NAME, \
+    hifld_School_Columns = "ID, \
+                                NAME, \
                                 ADDRESS, \
                                 CITY, \
                                 STATE, \
                                 ZIP, \
+                                TELEPHONE, \
                                 TYPE, \
+                                COUNTY, \
                                 Y, \
-                                X"
+                                X, \
+                                NAICSCODE, \
+                                NAICSDESCR, \
+                                NumStudents, \
+                                EfClass"
     for state in existingDatabaseList:
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
@@ -419,19 +471,33 @@ try:
                                     ?, \
                                     ?, \
                                     ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
+                                    ?, \
                                     ?)"
                     try:
                         cursor.execute(sqlInsertData,
-                                       [row["Name"], \
-                                        row["ST_ADDR"], \
-                                        row["CITY_NAME"], \
+                                       [row["IPEDSID"], \
+                                        row["NAME"], \
+                                        row["ADDRESS"], \
+                                        row["CITY"], \
                                         row["STATE"], \
                                         row["ZIP"], \
+                                        row["TELEPHONE"], \
                                         row["TYPE"], \
+                                        row["COUNTY"], \
                                         row["Y"], \
-                                        row["X"]])
+                                        row["LONGITUDE"], \
+                                        row["NAICS_CODE"], \
+                                        row["NAICS_DESC"],
+                                        row["ENROLL"], \
+                                        "EFS2"])
                     except Exception as e:
-                        print " cursor execute insertData CSV4 exception: ID {}, {}".format(row["ID"], (e))
+                        print " cursor execute insertData CSV4 exception: ID {}, {}".format(row["IPEDSID"], (e))
             conn.commit()
         except:
             print " csv4 dict exception"
@@ -451,7 +517,7 @@ try:
         cursor = conn.cursor()
         hifldtable = "["+state+"]..[hifld_School]"
 
-        # EocId (State abbreviation plus 6 digits eg WA123456,
+        # SchoolId (State abbreviation plus 6 digits eg WA123456,
         # this must be unique and will persist across four tables.
         # IDSeq should be unique, non null and int)
         try:
@@ -487,19 +553,14 @@ try:
 
         # Usage
         try:
-            updateData = "UPDATE "+hifldtable+" SET Usage='EmergencyCtr'"
+            updateData = "UPDATE "+hifldtable+" SET Usage='School'"
             cursor.execute(updateData)
             conn.commit()
         except:
             print " cursor execute UPDATE Usage exception"
 
         # EfClass
-        try:
-            updateData = "UPDATE "+hifldtable+" SET EfClass = 'EFEO'"
-            cursor.execute(updateData)
-            conn.commit()
-        except:
-            print " cursor execute UPDATE EfClass exception"
+        # This is set when loading the CSV data into the hifld table
 
         # Area
         try:
@@ -584,31 +645,63 @@ try:
             except:
                 print "cursor execute UPDATE Calculate Cost exception - MeansAdjNonRes table assign 1"
                 
-            # Get MeansCost based on GOV2
+            # Get MeansCost based on EDU1
             cursorCDMS.execute("SELECT Occupancy, MeansCost \
                                 FROM [CDMS]..[hzReplacementCost] \
-                                WHERE Occupancy = 'GOV2'")
+                                WHERE Occupancy = 'EDU1'")
             rows = cursorCDMS.fetchall()
             for row in rows:
-                MeansCost = str(row.MeansCost)
+                MeansCost1 = str(row.MeansCost)
 
-            # Get ContentValPct based on GOV2
+            # Get ContentValPct based on EDU1
             cursorCDMS.execute("SELECT Occupancy, ContentValPct \
                                 FROM [CDMS]..[hzPctContentOfStructureValue] \
-                                WHERE Occupancy = 'GOV2'")
+                                WHERE Occupancy = 'EDU1'")
             rows = cursorCDMS.fetchall()
             for row in rows:
-                ContentValPct = str(row.ContentValPct)
+                ContentValPct1 = str(row.ContentValPct)
+
+            # Get MeansCost based on EDU2
+            cursorCDMS.execute("SELECT Occupancy, MeansCost \
+                                FROM [CDMS]..[hzReplacementCost] \
+                                WHERE Occupancy = 'EDU2'")
+            rows = cursorCDMS.fetchall()
+            for row in rows:
+                MeansCost2 = str(row.MeansCost)
+
+            # Get ContentValPct based on EDU2
+            cursorCDMS.execute("SELECT Occupancy, ContentValPct \
+                                FROM [CDMS]..[hzPctContentOfStructureValue] \
+                                WHERE Occupancy = 'EDU2'")
+            rows = cursorCDMS.fetchall()
+            for row in rows:
+                ContentValPct2 = str(row.ContentValPct)
             
-            # Update Bldgcost
+            # Update Bldgcost EFS1
             updateData = "UPDATE "+hifldtable+" \
-                        SET BldgCost = (CalcBldgSqFt * "+MeansCost+" * MeansAdjNonRes) / 1000"
+                        SET BldgCost = (CalcBldgSqFt * "+MeansCost1+" * MeansAdjNonRes) / 1000 \
+                        WHERE EfClass = 'EFS1'"
             cursor.execute(updateData)
             conn.commit()
 
-            # Update ContentsCost
+            # Update ContentsCost EFS1
             updateData = "UPDATE "+hifldtable+" \
-                        SET ContentsCost = BldgCost * "+ContentValPct
+                        SET ContentsCost = BldgCost * "+ContentValPct1+" \
+                        WHERE EfClass = 'EFS1'"
+            cursor.execute(updateData)
+            conn.commit()
+
+            # Update Bldgcost EFS2
+            updateData = "UPDATE "+hifldtable+" \
+                        SET BldgCost = (CalcBldgSqFt * "+MeansCost2+" * MeansAdjNonRes) / 1000 \
+                        WHERE EfClass = 'EFS2'"
+            cursor.execute(updateData)
+            conn.commit()
+
+            # Update ContentsCost EFS2
+            updateData = "UPDATE "+hifldtable+" \
+                        SET ContentsCost = BldgCost * "+ContentValPct2+" \
+                        WHERE EfClass = 'EFS2'"
             cursor.execute(updateData)
             conn.commit()
 
@@ -667,27 +760,30 @@ try:
         # Get State eqBldgTypes
         try:
             cursor.execute("SELECT MCHCHS_U_eqSchool FROM [CDMS]..[eqEFBldgTypeDefault] \
-                            WHERE StateID = '"+state+"'")
+                            WHERE StateId = '"+state+"'")
             rows = cursor.fetchall()
             for row in rows:
                 MCHCHS_U_eqSchool = row.MCHCHS_U_eqSchool
+                
             cursor.execute("SELECT MCHCHS_R_eqSchool FROM [CDMS]..[eqEFBldgTypeDefault] \
-                            WHERE StateID = '"+state+"'")
+                            WHERE StateId = '"+state+"'")
             rows = cursor.fetchall()
             for row in rows:
                 MCHCHS_R_eqSchool = row.MCHCHS_R_eqSchool
+                
             cursor.execute("SELECT PCLC_U_eqSchool FROM [CDMS]..[eqEFBldgTypeDefault] \
-                            WHERE StateID = '"+state+"'")
+                            WHERE StateId = '"+state+"'")
             rows = cursor.fetchall()
             for row in rows:
                 PCLC_U_eqSchool = row.PCLC_U_eqSchool
+                
             cursor.execute("SELECT PCLC_R_eqSchool FROM [CDMS]..[eqEFBldgTypeDefault] \
-                            WHERE StateID = '"+state+"'")
+                            WHERE StateId = '"+state+"'")
             rows = cursor.fetchall()
             for row in rows:
-                PCLC_R_eqSchool = row.PCLC_R_eqEmergencyCtr
-        except:
-            print " cursor execute GET State eqBldgTypes exception"
+                PCLC_R_eqSchool = row.PCLC_R_eqSchool
+        except Exception as e:
+            print " cursor execute GET State eqBldgTypes exception: {}".format((e))
             
         # Set eqBldgType
         try:
@@ -712,8 +808,8 @@ try:
         except:
             print " cursor execute UPDATE FLOOD BldgType exception"
             
-        # Hazus_model.dbo.flSchoolDflt; EFEO
-        efClassList = ["EFEO"]
+        # Hazus_model.dbo.flSchoolDflt; EFS1
+        efClassList = ["EFS1", "EFS2"]
         for efClass in efClassList:
             try:
                 cursor.execute("UPDATE a \

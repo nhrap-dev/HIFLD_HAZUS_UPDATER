@@ -53,29 +53,27 @@ try:
     fx.close()
 except:
     print " exception downloading csv"
-print "Done"
-print
+print " CSV Done"
 # Download CSV2
 try:
     tempCSVPath2 = os.path.join(tempDir, "StateEOC.csv")
     csvFile2 = urllib.urlopen(url2).read()
-    with open(tempCSVPath, "w") as fx:
-        fx.write(csvFile)
+    with open(tempCSVPath2, "w") as fx:
+        fx.write(csvFile2)
     fx.close()
 except:
     print " exception downloading csv"
-print "Done"
-print
+print " CSV2 Done"
 # Download CSV3
 try:
     tempCSVPath3 = os.path.join(tempDir, "FEMAHQ.csv")
     csvFile3 = urllib.urlopen(url3).read()
-    with open(tempCSVPath, "w") as fx:
-        fx.write(csvFile)
+    with open(tempCSVPath3, "w") as fx:
+        fx.write(csvFile3)
     fx.close()
 except:
     print " exception downloading csv"
-print "Done"
+print " CSV3 Done"
 print
 
 
@@ -115,7 +113,7 @@ try:
             createTable = "CREATE TABLE hifld_EmergencyCtr \
                             (ID int, \
                             NAME varchar(150), \
-                            ADDRESS varchar(50), \
+                            ADDRESS varchar(150), \
                             CITY varchar(50), \
                             STATE varchar(50), \
                             ZIP int, \
@@ -272,11 +270,12 @@ print
 print "Copy Downloaded HIFLD StateEOC CSV2 to SQL Staging Table..."
 try:
     # Define the columns that data will be inserted into
-    hifld_EmergencyCtr_Columns = "NAME, \
+    hifld_EmergencyCtr_Columns = "ID, \
+                                NAME, \
+                                ADDRESS, \
                                 CITY, \
-                                STATE, \
-                                ZIPCODE, \
-                                PHONE, \
+                                ZIP, \
+                                TELEPHONE, \
                                 Y, \
                                 X"
     for state in existingDatabaseList:
@@ -287,42 +286,48 @@ try:
         cursor = conn.cursor()
         # Iterate CSV and insert into sql
         try:
-            f = open(tempCSVPath2)
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row["STATE"] == state:
-                    # there are several records with funky ANSI 
-                    # character, but not utf-8. Possibly not ASCII character.
-##                    csvAddress = row["ADDRESS"].decode("utf-8").encode("ascii", "ignore")
-##                    csvName = row["NAME"].decode("utf-8").encode("ascii", "ignore")
-##                    csvCity = row["CITY"].decode("utf-8").encode("ascii", "ignore")
-##                    csvTelephone = row["TELEPHONE"].decode("utf-8").encode("ascii", "ignore")
-                    # This list order must match the order of the created table that it's being inserted into                 
-                    sqlInsertData = "INSERT INTO ["+state+"]..[hifld_EmergencyCtr] ("\
-                                    +hifld_EmergencyCtr_Columns+") \
-                                    VALUES \
-                                    (?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?)"
-                    try:
-                        cursor.execute(sqlInsertData,
-                                       [row["NAME"], \
-                                        row["STREET"], \
-                                        row["CITY"], \
-                                        row["STATE"], \
-                                        row["ZIP"], \
-                                        row["TELEPHONE"], \
-                                        row["Y"], \
-                                        row["X"]])
-                    except Exception as e:
-                        print " cursor execute insertData CSV2 exception: ID {}, {}".format(row["ID"], (e))
-            conn.commit()
-        except:
-            print " csv2 dict exception"
+            f2 = open(tempCSVPath2)
+            reader2 = csv.DictReader(f2)
+            for row in reader2:
+                # there are several records with funky ANSI 
+                # character, but not utf-8. Possibly not ASCII character.
+                csvFid = row["FID"].decode("utf-8").encode("ascii", "ignore")
+                csvStreet = row["STREET"].decode("utf-8").encode("ascii", "ignore")
+                csvName = row["NAME"].decode("utf-8").encode("ascii", "ignore")
+                csvCity = row["CITY"].decode("utf-8").encode("ascii", "ignore")
+                csvPhone = row["PHONE"].decode("utf-8").encode("ascii", "ignore")
+                csvZipcode = row["ZIPCODE"].decode("utf-8").encode("ascii", "ignore")
+                csvY = row["LAT"].decode("utf-8").encode("ascii", "ignore")
+                csvX = row["LON"].decode("utf-8").encode("ascii", "ignore")
+                # Add all rows and filter them out via the CountyFIPS IS NULL when copying into HAZUS tables
+                # This list order must match the order of the created table that it's being inserted into                 
+                sqlInsertData = "INSERT INTO ["+state+"]..[hifld_EmergencyCtr] ("\
+                                +hifld_EmergencyCtr_Columns+") \
+                                VALUES \
+                                (?, \
+                                ?, \
+                                ?, \
+                                ?, \
+                                ?, \
+                                ?, \
+                                ?, \
+                                ?)"
+                try:
+                    cursor.execute(sqlInsertData,
+                                    [csvFid, \
+                                    csvName, \
+                                    csvStreet, \
+                                    csvCity, \
+                                    csvZipcode, \
+                                    csvPhone, \
+                                    csvY, \
+                                    csvX])
+                    conn.commit()
+                except Exception as e:
+                    print " cursor execute insertData CSV2 exception: FID {}, {}".format(csvFid, (e))
+        except Exception as e:
+            print " StateEOC csv2 dict exception: {}, {}".format(row["FID"], (e))
+            print row
 except:
     print " exception Copy Downloaded HIFLD CSV to Staging Table"
 print "Done"
@@ -347,9 +352,9 @@ try:
         cursor = conn.cursor()
         # Iterate CSV and insert into sql
         try:
-            f = open(tempCSVPath3)
-            reader = csv.DictReader(f)
-            for row in reader:
+            f3 = open(tempCSVPath3)
+            reader3 = csv.DictReader(f3)
+            for row in reader3:
                 if row["STATE"] == state:
                     # there are several records with funky ANSI 
                     # character, but not utf-8. Possibly not ASCII character.
@@ -380,10 +385,10 @@ try:
                                         row["Y"], \
                                         row["X"]])
                     except Exception as e:
-                        print " cursor execute insertData CSV3 exception: ID {}, {}".format(row["ID"], (e))
+                        print " cursor execute insertData CSV3 exception: ID {}, {}".format(row["Name"], (e))
             conn.commit()
         except:
-            print " csv3 dict exception"
+            print " FEMA HQ csv3 dict exception"
 except:
     print " exception Copy Downloaded HIFLD CSV's to Staging Table"
 print "Done"
