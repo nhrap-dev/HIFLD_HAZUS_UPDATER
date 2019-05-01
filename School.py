@@ -163,7 +163,6 @@ try:
                             BldgCost numeric(38,8), \
                             ContentsCost numeric(38,8), \
                             Cost numeric(38,8), \
-                            CalcBldgSqFt int, \
                             MeansAdjNonRes real, \
                             IDseq int IDENTITY(1,1), \
                             CensusTractID nvarchar(11), \
@@ -188,7 +187,7 @@ try:
                             Kitchen smallint, \
                             BackupPower smallint, \
                             ShelterCapacity int,\
-                            NumStudents smallint")
+                            Population smallint")
             conn.commit()
         except Exception as e:
             print "  cursor ALTER TABLE exception: {}".format((e))
@@ -214,7 +213,7 @@ try:
                             X, \
                             NAICSCODE, \
                             NAICSDESCR, \
-                            NumStudents, \
+                            Population, \
                             EfClass"
     for state in existingDatabaseList:
         print state
@@ -262,7 +261,7 @@ try:
                                         row["LONGITUDE"], \
                                         row["NAICS_CODE"], \
                                         row["NAICS_DESC"],
-                                        row["ENROLLMENT"], \
+                                        row["POPULATION"], \
                                         "EFS1"])
                     except Exception as e:
                         print " cursor execute insertData CSV exception: ID {}, {}".format(row["NCESID"], (e))
@@ -293,7 +292,7 @@ try:
                                 X, \
                                 NAICSCODE, \
                                 NAICSDESCR, \
-                                NumStudents, \
+                                Population, \
                                 EfClass"
     for state in existingDatabaseList:
         print state
@@ -341,7 +340,7 @@ try:
                                         row["LONGITUDE"], \
                                         row["NAICS_CODE"], \
                                         row["NAICS_DESC"],
-                                        row["ENROLLMENT"],
+                                        row["POPULATION"],
                                         "EFS1"])
                     except Exception as e:
                         print " cursor execute insertData CSV2 exception: ID {}, {}".format(row["NCESID"], (e))
@@ -370,7 +369,7 @@ try:
                                 X, \
                                 NAICSCODE, \
                                 NAICSDESCR, \
-                                NumStudents, \
+                                Population, \
                                 EfClass"
     for state in existingDatabaseList:
         print state
@@ -418,7 +417,7 @@ try:
                                         row["LONGITUDE"], \
                                         row["NAICS_CODE"], \
                                         row["NAICS_DESC"],
-                                        row["TOT_ENROLL"], \
+                                        row["POPULATION"], \
                                         "EFS2"])
                     except Exception as e:
                         print " cursor execute insertData CSV3 exception: ID {}, {}".format(row["IPEDSID"], (e))
@@ -446,7 +445,7 @@ try:
                                 X, \
                                 NAICSCODE, \
                                 NAICSDESCR, \
-                                NumStudents, \
+                                Population, \
                                 EfClass"
     for state in existingDatabaseList:
         print state
@@ -494,7 +493,7 @@ try:
                                         row["LONGITUDE"], \
                                         row["NAICS_CODE"], \
                                         row["NAICS_DESC"],
-                                        row["ENROLL"], \
+                                        row["POPULATION"], \
                                         "EFS2"])
                     except Exception as e:
                         print " cursor execute insertData CSV4 exception: ID {}, {}".format(row["IPEDSID"], (e))
@@ -571,20 +570,56 @@ try:
             cursorCDMS = connCDMS.cursor()
             cursorCDMS.execute("SELECT Occupancy,SquareFootage \
                                 FROM [CDMS]..[hzSqftFactors] \
-                                WHERE Occupancy = 'GOV2'")
+                                WHERE Occupancy = 'EDU1'")
+            rows = cursorCDMS.fetchall()
+            # Get EDU1 SqFt
+            for row in rows:
+                HazusDefaultSqFtEDU1 = str(row.SquareFootage)
+            cursorCDMS.execute("SELECT Occupancy,SquareFootage \
+                                FROM [CDMS]..[hzSqftFactors] \
+                                WHERE Occupancy = 'EDU2'")
+            rows = cursorCDMS.fetchall()
+            # Get EDU2 SqFt
+            for row in rows:
+                HazusDefaultSqFtEDU2 = str(row.SquareFootage)
+            # Get EDU1 PeakDay
+            cursorCDMS.execute("SELECT Occupancy,PeakDay \
+                                FROM [CDMS]..[cdms_AEBMParameters] \
+                                WHERE Occupancy = 'EDU1'")
             rows = cursorCDMS.fetchall()
             for row in rows:
-                HazusDefaultSqFt = str(row.SquareFootage)
-                
-            # Update the Area field (this may be redudanct/not needed and instead just the bldgsqft)
-            updateData = "UPDATE "+hifldtable+" SET Area = "+HazusDefaultSqFt
+                HazusEDU1PeakDay = str(row.PeakDay)
+            # Get EDU2 PeakDay
+            cursorCDMS.execute("SELECT Occupancy,PeakDay \
+                                FROM [CDMS]..[cdms_AEBMParameters] \
+                                WHERE Occupancy = 'EDU2'")
+            rows = cursorCDMS.fetchall()
+            for row in rows:
+                HazusEDU2PeakDay = str(row.PeakDay)
+                            
+            # cdms_AEBMParameters edu1, edu2. population * FEMA P58 PeakDay squarefootage estimate,
+            # otherwise default from hzSqFtFactors if population is missing
+            updateData = "UPDATE "+hifldtable+" \
+                            SET Area = Population * "+HazusEDU1PeakDay+"\
+                            WHERE EfClass = 'EFS1' AND Population <> -999"
+            cursor.execute(updateData)
+            conn.commit()
+            updateData = "UPDATE "+hifldtable+" \
+                            SET Area = Population * "+HazusEDU2PeakDay+"\
+                            WHERE EfClass = 'EFS2' AND Population <> -999"
+            cursor.execute(updateData)
+            conn.commit()
+            updateData = "UPDATE "+hifldtable+" \
+                            SET Area = "+HazusDefaultSqFtEDU1+"\
+                            WHERE EfClass = 'EFS1' AND Population = -999"
+            cursor.execute(updateData)
+            conn.commit()
+            updateData = "UPDATE "+hifldtable+" \
+                            SET Area = "+HazusDefaultSqFtEDU2+"\
+                            WHERE EfClass = 'EFS2' AND Population = -999"
             cursor.execute(updateData)
             conn.commit()
 
-            # Update the BldgSqFt field
-            updateData = "UPDATE "+hifldtable+" SET CalcBldgSqFt = "+HazusDefaultSqFt
-            cursor.execute(updateData)
-            conn.commit()
         except Exception as e:
             print " cursor execute Update Area exception: {}".format((e))
 
@@ -659,7 +694,7 @@ try:
                                 WHERE Occupancy = 'EDU1'")
             rows = cursorCDMS.fetchall()
             for row in rows:
-                ContentValPct1 = str(row.ContentValPct)
+                ContentValPct1 = str(row.ContentValPct/100.0)
 
             # Get MeansCost based on EDU2
             cursorCDMS.execute("SELECT Occupancy, MeansCost \
@@ -675,11 +710,11 @@ try:
                                 WHERE Occupancy = 'EDU2'")
             rows = cursorCDMS.fetchall()
             for row in rows:
-                ContentValPct2 = str(row.ContentValPct)
+                ContentValPct2 = str(row.ContentValPct/100.0)
             
             # Update Bldgcost EFS1
             updateData = "UPDATE "+hifldtable+" \
-                        SET BldgCost = (CalcBldgSqFt * "+MeansCost1+" * MeansAdjNonRes) / 1000 \
+                        SET BldgCost = (Area * "+MeansCost1+" * MeansAdjNonRes) / 1000 \
                         WHERE EfClass = 'EFS1'"
             cursor.execute(updateData)
             conn.commit()
@@ -693,7 +728,7 @@ try:
 
             # Update Bldgcost EFS2
             updateData = "UPDATE "+hifldtable+" \
-                        SET BldgCost = (CalcBldgSqFt * "+MeansCost2+" * MeansAdjNonRes) / 1000 \
+                        SET BldgCost = (Area * "+MeansCost2+" * MeansAdjNonRes) / 1000 \
                         WHERE EfClass = 'EFS2'"
             cursor.execute(updateData)
             conn.commit()
@@ -839,6 +874,16 @@ try:
             conn.commit()
         except:
             print " cursor execute firstfloor modification" 
+
+        # Update MedianYearBuilt values of < 1939 to be 1939 before moving into HAZUS tables
+        try:
+            updateData = "UPDATE "+hifldtable+" \
+                            SET MedianYearBuilt = 1939 \
+                            WHERE MedianYearBuilt < 1939"
+            cursor.execute(updateData)
+            conn.commit()
+        except Exception as e:
+            print " cursor execute Update MedianYearBuilt <1939 exception: {}".format((e))
         
         # CONDITION DATA TO FIT WITHIN MAX LIMITS
         # Calculate the truncated fields
@@ -952,7 +997,8 @@ try:
                             FROM "+hifldTable+\
                             " WHERE SchoolId IS NOT NULL \
                             AND EfClass IS NOT NULL \
-                            AND CensusTractId IS NOT NULL")
+                            AND CensusTractId IS NOT NULL \
+                            ORDER BY SchoolId ASC")
             conn.commit()
         except Exception as e:
             print " cursor execute Insert Into hzSchool exception: {}".format((e))
@@ -983,7 +1029,8 @@ try:
                             \
                             FROM "+hifldTable+\
                             " WHERE SchoolId IS NOT NULL \
-                            AND CensusTractId IS NOT NULL")
+                            AND CensusTractId IS NOT NULL \
+                            ORDER BY SchoolId ASC")
             conn.commit()
         except Exception as e:
             print " cursor execute Insert Into flSchool exception: {}".format((e))
@@ -1015,7 +1062,8 @@ try:
                             " WHERE SchoolId IS NOT NULL \
                             AND eqBldgType IS NOT NULL \
                             AND eqDesignLevel IS NOT NULL \
-                            AND CensusTractId IS NOT NULL")
+                            AND CensusTractId IS NOT NULL \
+                            ORDER BY SchoolId ASC")
             conn.commit()
         except Exception as e:
             print " cursor execute Insert Into eqSchool exception: {}".format((e))

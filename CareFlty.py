@@ -780,7 +780,8 @@ try:
                             FROM "+hifldTable+\
                             " WHERE CareFltyId IS NOT NULL \
                             AND EfClass IS NOT NULL \
-                            AND CensusTractId IS NOT NULL")
+                            AND CensusTractId IS NOT NULL\
+                            ORDER BY CareFltyId ASC")
             conn.commit()
         except Exception as e:
             print " cursor execute Insert Into hzCareFlty exception: {}".format((e))
@@ -811,7 +812,8 @@ try:
                             \
                             FROM "+hifldTable+\
                             " WHERE CareFltyId IS NOT NULL \
-                            AND CensusTractId IS NOT NULL")
+                            AND CensusTractId IS NOT NULL\
+                            ORDER BY CareFltyId ASC")
             conn.commit()
         except Exception as e:
             print " cursor execute Insert Into flCareFlty exception: {}".format((e))
@@ -843,7 +845,8 @@ try:
                             " WHERE CareFltyId IS NOT NULL \
                             AND eqBldgType IS NOT NULL \
                             AND eqDesignLevel IS NOT NULL \
-                            AND CensusTractId IS NOT NULL")
+                            AND CensusTractId IS NOT NULL\
+                            ORDER BY CareFltyId ASC")
             conn.commit()
         except Exception as e:
             print " cursor execute Insert Into eqCareFlty exception: {}".format((e))

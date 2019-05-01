@@ -402,7 +402,7 @@ try:
                                 WHERE Occupancy = 'GOV2'")
             rows = cursorCDMS.fetchall()
             for row in rows:
-                ContentValPct = str(row.ContentValPct)
+                ContentValPct = str(row.ContentValPct/100.0)
             
             # Update Bldgcost
             updateData = "UPDATE "+hifldtable+" \
@@ -547,6 +547,16 @@ try:
             conn.commit()
         except:
             print " cursor execute firstfloor modification" 
+
+        # Update MedianYearBuilt values of < 1939 to be 1939 before moving into HAZUS tables
+        try:
+            updateData = "UPDATE "+hifldtable+" \
+                            SET MedianYearBuilt = 1939 \
+                            WHERE MedianYearBuilt < 1939"
+            cursor.execute(updateData)
+            conn.commit()
+        except Exception as e:
+            print " cursor execute Update MedianYearBuilt <1939 exception: {}".format((e))
         
         # CONDITION DATA TO FIT WITHIN MAX LIMITS
         # Calculate the truncated fields
@@ -660,7 +670,8 @@ try:
                             FROM "+hifldTable+\
                             " WHERE PoliceStationId IS NOT NULL \
                             AND EfClass IS NOT NULL \
-                            AND CensusTractId IS NOT NULL")
+                            AND CensusTractId IS NOT NULL \
+                            ORDER BY PoliceStationId ASC")
             conn.commit()
         except Exception as e:
             print " cursor execute Insert Into hzPoliceStation exception: {}".format((e))
@@ -691,7 +702,8 @@ try:
                             \
                             FROM "+hifldTable+\
                             " WHERE PoliceStationId IS NOT NULL \
-                            AND CensusTractId IS NOT NULL")
+                            AND CensusTractId IS NOT NULL \
+                            ORDER BY PoliceStationId ASC")
             conn.commit()
         except Exception as e:
             print " cursor execute Insert Into flPoliceStation exception: {}".format((e))
@@ -723,7 +735,8 @@ try:
                             " WHERE PoliceStationId IS NOT NULL \
                             AND eqBldgType IS NOT NULL \
                             AND eqDesignLevel IS NOT NULL \
-                            AND CensusTractId IS NOT NULL")
+                            AND CensusTractId IS NOT NULL \
+                            ORDER BY PoliceStationId ASC")
             conn.commit()
         except Exception as e:
             print " cursor execute Insert Into eqPoliceStation exception: {}".format((e))

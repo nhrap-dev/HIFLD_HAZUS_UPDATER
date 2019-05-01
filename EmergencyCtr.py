@@ -19,7 +19,16 @@ import urllib
 import csv
 import pyodbc
 import ConfigParser
+import codecs
 
+##def addUTF8Bom(filename):
+##  f = codecs.open(filename, 'r', 'utf-8')
+##  content = f.read()
+##  f.close()
+##  f2 = codecs.open(filename, 'w', 'utf-8')
+##  f2.write(u'\ufeff')
+##  f2.write(content)
+##  f2.close()
 
 print "Read config.ini file..."
 # User defined variables from .ini file...
@@ -62,7 +71,7 @@ try:
         fx.write(csvFile2)
     fx.close()
 except:
-    print " exception downloading csv"
+    print " exception downloading csv2"
 print " CSV2 Done"
 # Download CSV3
 try:
@@ -71,8 +80,9 @@ try:
     with open(tempCSVPath3, "w") as fx:
         fx.write(csvFile3)
     fx.close()
-except:
-    print " exception downloading csv"
+##    addUTF8Bom(tempCSVPath3)
+except Exception as e:
+        print "  exception downloading csv3: {}".format((e))
 print " CSV3 Done"
 print
 
@@ -112,6 +122,7 @@ try:
             print " Creating hifld_EmergencyCtr table..."
             createTable = "CREATE TABLE hifld_EmergencyCtr \
                             (ID int, \
+                            IDNumber int, \
                             NAME varchar(150), \
                             ADDRESS varchar(150), \
                             CITY varchar(50), \
@@ -155,7 +166,7 @@ try:
                             Cost numeric(38,8), \
                             CalcBldgSqFt int, \
                             MeansAdjNonRes real, \
-                            IDseq int IDENTITY(1,1), \
+                            \
                             CensusTractID nvarchar(11), \
                             BldgSchemesId nvarchar(5), \
                             Shape geometry, \
@@ -177,7 +188,8 @@ try:
                             Area numeric(38,8), \
                             Kitchen smallint, \
                             BackupPower smallint, \
-                            ShelterCapacity int")
+                            ShelterCapacity int, \
+                            State_Name varchar(40)")
             conn.commit()
         except Exception as e:
             print "  cursor ALTER TABLE exception: {}".format((e))
@@ -259,8 +271,8 @@ try:
                     except Exception as e:
                         print " cursor execute insertData CSV exception: ID {}, {}".format(row["ID"], (e))
             conn.commit()
-        except:
-            print " csv dict exception"
+        except Exception as e:
+            print "  csv dict exception: {}".format((e))
 except:
     print " exception Copy Downloaded HIFLD CSV to Staging Table"
 print "Done"
@@ -274,6 +286,7 @@ try:
                                 NAME, \
                                 ADDRESS, \
                                 CITY, \
+                                State_Name, \
                                 ZIP, \
                                 TELEPHONE, \
                                 Y, \
@@ -295,6 +308,7 @@ try:
                 csvStreet = row["STREET"].decode("utf-8").encode("ascii", "ignore")
                 csvName = row["NAME"].decode("utf-8").encode("ascii", "ignore")
                 csvCity = row["CITY"].decode("utf-8").encode("ascii", "ignore")
+                csvState_Name = row["STATE"].decode("utf-8").encode("ascii", "ignore")
                 csvPhone = row["PHONE"].decode("utf-8").encode("ascii", "ignore")
                 csvZipcode = row["ZIPCODE"].decode("utf-8").encode("ascii", "ignore")
                 csvY = row["LAT"].decode("utf-8").encode("ascii", "ignore")
@@ -311,6 +325,7 @@ try:
                                 ?, \
                                 ?, \
                                 ?, \
+                                ?, \
                                 ?)"
                 try:
                     cursor.execute(sqlInsertData,
@@ -318,6 +333,7 @@ try:
                                     csvName, \
                                     csvStreet, \
                                     csvCity, \
+                                    csvState_Name, \
                                     csvZipcode, \
                                     csvPhone, \
                                     csvY, \
@@ -336,10 +352,11 @@ print
 print "Copy Downloaded HIFLD FEMA HQ CSV3 to SQL Staging Table..."
 try:
     # Define the columns that data will be inserted into
-    hifld_EmergencyCtr_Columns = "NAME, \
+    hifld_EmergencyCtr_Columns = "ID, \
+                                NAME, \
                                 ADDRESS, \
                                 CITY, \
-                                STATE, \
+                                State_Name, \
                                 ZIP, \
                                 TYPE, \
                                 Y, \
@@ -352,43 +369,43 @@ try:
         cursor = conn.cursor()
         # Iterate CSV and insert into sql
         try:
-            f3 = open(tempCSVPath3)
+            f3 = codecs.open(tempCSVPath3,encoding='utf-8-sig')
             reader3 = csv.DictReader(f3)
+##            import codecs
+##            reader3 = csv.DictReader(codecs.EncodedFile(f3, 'utf8', 'utf_8_sig'), delimiter=";")
             for row in reader3:
-                if row["STATE"] == state:
-                    # there are several records with funky ANSI 
-                    # character, but not utf-8. Possibly not ASCII character.
-##                    csvAddress = row["ADDRESS"].decode("utf-8").encode("ascii", "ignore")
-##                    csvName = row["NAME"].decode("utf-8").encode("ascii", "ignore")
-##                    csvCity = row["CITY"].decode("utf-8").encode("ascii", "ignore")
-##                    csvTelephone = row["TELEPHONE"].decode("utf-8").encode("ascii", "ignore")
-                    # This list order must match the order of the created table that it's being inserted into                 
-                    sqlInsertData = "INSERT INTO ["+state+"]..[hifld_EmergencyCtr] ("\
-                                    +hifld_EmergencyCtr_Columns+") \
-                                    VALUES \
-                                    (?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?, \
-                                    ?)"
-                    try:
-                        cursor.execute(sqlInsertData,
-                                       [row["Name"], \
-                                        row["ST_ADDR"], \
-                                        row["CITY_NAME"], \
-                                        row["STATE"], \
-                                        row["ZIP"], \
-                                        row["TYPE"], \
-                                        row["Y"], \
-                                        row["X"]])
-                    except Exception as e:
-                        print " cursor execute insertData CSV3 exception: ID {}, {}".format(row["Name"], (e))
+                # there are several records with funky ANSI 
+                # character, but not utf-8. Possibly not ASCII character.
+                # "\xef\xbb\xbfX"
+                # This list order must match the order of the created table that it's being inserted into                 
+                sqlInsertData = "INSERT INTO ["+state+"]..[hifld_EmergencyCtr] ("\
+                                +hifld_EmergencyCtr_Columns+") \
+                                VALUES \
+                                (?, \
+                                ?, \
+                                ?, \
+                                ?, \
+                                ?, \
+                                ?, \
+                                ?, \
+                                ?, \
+                                ?)"
+                try:
+                    cursor.execute(sqlInsertData,
+                                    [row["FID"], \
+                                    row["Name"], \
+                                    row["ST_ADDR"], \
+                                    row["CITY_NAME"], \
+                                    row["STATE_NAME"], \
+                                    row["ZIP"], \
+                                    row["TYPE"], \
+                                    row["Y"], \
+                                    row["X"]])
+                except Exception as e:
+                    print " cursor execute insertData CSV3 exception: {}".format((e))
             conn.commit()
-        except:
-            print " FEMA HQ csv3 dict exception"
+        except Exception as e:
+            print "  FEMA HQ csv3 dict exception: {}".format((e))
 except:
     print " exception Copy Downloaded HIFLD CSV's to Staging Table"
 print "Done"
@@ -408,13 +425,9 @@ try:
         # EocId (State abbreviation plus 6 digits eg WA123456,
         # this must be unique and will persist across four tables.
         # IDSeq should be unique, non null and int)
-        try:
-            cursor.execute("UPDATE "+hifldtable+" SET EocId = '"+state+\
-                           "' + RIGHT('000000'+cast(IDseq as varchar(6)),6)")
-            conn.commit()
-        except:
-            print " cursor execute UPDATE EocId"
-
+        # Calculate after assigning CensusTractID and
+        # removing records that do not fall within the state/provence
+        
         # Kitchen
         try:
             updateData = "UPDATE "+hifldtable+" SET Kitchen = 0"
@@ -495,6 +508,32 @@ try:
             conn.commit()
         except:
             print " cursor execute UPDATE tractid exception"
+
+        # Remove rows that did not match a CensusTractID before calculating the id
+        try:
+            cursor.execute("DELETE FROM "+hifldtable+" \
+                            WHERE CensusTractID IS NULL")
+            conn.commit()
+        except:
+            print " cursor execute UPDATE Null CensusTractID Rows exception"
+
+        # EocId State abbreviation plus 6 digits eg WA123456,
+        # this must be unique and will persist across four tables.
+        # IDSeq should be unique, non null and int)
+        # Have to add the IDENTITY here instead of earlier since deleting the rows
+        # alter the sequence number; a gap in numbers would exist in the ids.
+        try:
+            cursor.execute("ALTER TABLE "+hifldtable+" \
+                           ADD IDseq int IDENTITY(1,1)")
+            conn.commit()
+        except:
+            print " cursor execute ADD IDseq"
+        try:
+            cursor.execute("UPDATE "+hifldtable+" SET EocId = '"+state+\
+                           "' + RIGHT('000000'+ cast(IDseq as varchar(6)),6)")
+            conn.commit()
+        except:
+            print " cursor execute UPDATE EocId"
             
         # Update CountyFIPSID based on CensusTractID
         try:
@@ -546,11 +585,11 @@ try:
                                 WHERE Occupancy = 'GOV2'")
             rows = cursorCDMS.fetchall()
             for row in rows:
-                ContentValPct = str(row.ContentValPct)
+                ContentValPct = str(row.ContentValPct/100.0)
 
             # Update Bldgcost
             updateData = "UPDATE "+hifldtable+" \
-                        SET BldgCost = (CalcBldgSqFt * "+MeansCost+" * MeansAdjNonRes) / 1000"
+                        SET BldgCost = (Area * "+MeansCost+" * MeansAdjNonRes) / 1000"
             cursor.execute(updateData)
             conn.commit()
 
@@ -691,6 +730,16 @@ try:
             conn.commit()
         except:
             print " cursor execute firstfloor modification" 
+
+        # Update MedianYearBuilt values of < 1939 to be 1939 before moving into HAZUS tables
+        try:
+            updateData = "UPDATE "+hifldtable+" \
+                            SET MedianYearBuilt = 1939 \
+                            WHERE MedianYearBuilt < 1939"
+            cursor.execute(updateData)
+            conn.commit()
+        except Exception as e:
+            print " cursor execute Update MedianYearBuilt <1939 exception: {}".format((e))
         
         # CONDITION DATA TO FIT WITHIN MAX LIMITS
         # Calculate the truncated fields
@@ -804,7 +853,8 @@ try:
                             FROM "+hifldTable+\
                             " WHERE EocId IS NOT NULL \
                             AND EfClass IS NOT NULL \
-                            AND CensusTractId IS NOT NULL")
+                            AND CensusTractId IS NOT NULL\
+                            ORDER BY EocId ASC")
             conn.commit()
         except Exception as e:
             print " cursor execute Insert Into hzEmergencyCtr exception: {}".format((e))
@@ -835,7 +885,8 @@ try:
                             \
                             FROM "+hifldTable+\
                             " WHERE EocId IS NOT NULL \
-                            AND CensusTractId IS NOT NULL")
+                            AND CensusTractId IS NOT NULL\
+                            ORDER BY EocId ASC")
             conn.commit()
         except Exception as e:
             print " cursor execute Insert Into flEmergencyCtr exception: {}".format((e))
@@ -867,7 +918,8 @@ try:
                             " WHERE EocId IS NOT NULL \
                             AND eqBldgType IS NOT NULL \
                             AND eqDesignLevel IS NOT NULL \
-                            AND CensusTractId IS NOT NULL")
+                            AND CensusTractId IS NOT NULL\
+                            ORDER BY EocId ASC")
             conn.commit()
         except Exception as e:
             print " cursor execute Insert Into eqEmergencyCtr exception: {}".format((e))
