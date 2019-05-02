@@ -91,7 +91,7 @@ try:
             createTable = "CREATE TABLE hifld_PoliceStation \
                             (ID int, \
                             NAME varchar(150), \
-                            ADDRESS varchar(50), \
+                            ADDRESS varchar(150), \
                             CITY varchar(50), \
                             STATE varchar(50), \
                             ZIP int, \
@@ -166,6 +166,7 @@ print
 
 
 print "Copy Downloaded HIFLD CSV to SQL Staging Table..."
+RowCountCSV1Dict = {}
 try:
     # Define the columns that data will be inserted into
     hifld_PoliceStation_Columns = "ID, \
@@ -183,6 +184,7 @@ try:
                                 NAICSDESCR, \
                                 STATE_ID"
     for state in existingDatabaseList:
+        RowCountCSV1 = 0
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
                         ";Database="+state+";UID="+UserName+";PWD="+Password
@@ -194,6 +196,7 @@ try:
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
+                    RowCountCSV1 += 1
                     # there are several records with funky ANSI 
                     # character, but not utf-8. Possibly not ASCII character.
 ##                    csvAddress = row["ADDRESS"].decode("utf-8").encode("ascii", "ignore")
@@ -239,6 +242,7 @@ try:
             conn.commit()
         except:
             print " csv dict exception"
+        RowCountCSV1Dict[state] = RowCountCSV1
 except:
     print " exception Copy Downloaded HIFLD CSV to Staging Table"
 print "Done"
@@ -741,6 +745,26 @@ try:
         except Exception as e:
             print " cursor execute Insert Into eqPoliceStation exception: {}".format((e))
         print " done"
+        
+        # Get row count for HIFLD and HAZUS tables
+        try:
+            cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hifldtable)
+            rows = cursor.fetchall()
+            for row in rows:
+                HIFLDRowCount = row.Column1
+        except Exception as e:
+            print " cursor execute row count hifld exception: {}".format((e))
+        try:
+            cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hzTable)
+            rows = cursor.fetchall()
+            for row in rows:
+                HzRowCount = row.Column1
+        except Exception as e:
+            print " cursor execute row count Hz exception: {}".format((e))
+        TotalCSVRows = RowCountCSV1Dict.get(state)
+        print
+        print "{} RowCountSummary".format(state)
+        print "CSV: {} HIFLD: {} HZ: {}".format(TotalCSVRows, HIFLDRowCount, HzRowCount)
         
 except:
     print " exception Move Data from Staging to HAZUS Tables"

@@ -200,6 +200,7 @@ print
 
 
 print "Copy Downloaded HIFLD CSV to SQL Staging Table..."
+RowCountCSV1 = 0
 try:
     # Define the columns that data will be inserted into
     hifld_EmergencyCtr_Columns = "ID, \
@@ -228,6 +229,7 @@ try:
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
+                    RowCountCSV1 += 1
                     # there are several records with funky ANSI 
                     # character, but not utf-8. Possibly not ASCII character.
 ##                    csvAddress = row["ADDRESS"].decode("utf-8").encode("ascii", "ignore")
@@ -280,6 +282,7 @@ print
         
 
 print "Copy Downloaded HIFLD StateEOC CSV2 to SQL Staging Table..."
+RowCountCSV2 = 0
 try:
     # Define the columns that data will be inserted into
     hifld_EmergencyCtr_Columns = "ID, \
@@ -302,6 +305,7 @@ try:
             f2 = open(tempCSVPath2)
             reader2 = csv.DictReader(f2)
             for row in reader2:
+                RowCountCSV2 += 1
                 # there are several records with funky ANSI 
                 # character, but not utf-8. Possibly not ASCII character.
                 csvFid = row["FID"].decode("utf-8").encode("ascii", "ignore")
@@ -350,6 +354,7 @@ print "Done"
 print
 
 print "Copy Downloaded HIFLD FEMA HQ CSV3 to SQL Staging Table..."
+RowCountCSV3 = 0
 try:
     # Define the columns that data will be inserted into
     hifld_EmergencyCtr_Columns = "ID, \
@@ -369,11 +374,12 @@ try:
         cursor = conn.cursor()
         # Iterate CSV and insert into sql
         try:
-            f3 = codecs.open(tempCSVPath3,encoding='utf-8-sig')
+            f3 = codecs.open(tempCSVPath3, encoding='utf-8-sig')
             reader3 = csv.DictReader(f3)
 ##            import codecs
 ##            reader3 = csv.DictReader(codecs.EncodedFile(f3, 'utf8', 'utf_8_sig'), delimiter=";")
             for row in reader3:
+                RowCountCSV3 += 1
                 # there are several records with funky ANSI 
                 # character, but not utf-8. Possibly not ASCII character.
                 # "\xef\xbb\xbfX"
@@ -839,7 +845,7 @@ try:
                             LEFT(City, 40), \
                             Zip, \
                             State, \
-                            Telephone, \
+                            RIGHT(Telephone,14), \
                             MedianYearBuilt, \
                             Cost, \
                             Y, \
@@ -924,6 +930,26 @@ try:
         except Exception as e:
             print " cursor execute Insert Into eqEmergencyCtr exception: {}".format((e))
         print " done"
+
+        # Get row count for HIFLD and HAZUS tables
+        try:
+            cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hifldtable)
+            rows = cursor.fetchall()
+            for row in rows:
+                HIFLDRowCount = row.Column1
+        except Exception as e:
+            print " cursor execute row count hifld exception: {}".format((e))
+        try:
+            cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hzTable)
+            rows = cursor.fetchall()
+            for row in rows:
+                HzRowCount = row.Column1
+        except Exception as e:
+            print " cursor execute row count Hz exception: {}".format((e))
+        TotalCSVRows = RowCountCSV1 + RowCountCSV2 + RowCountCSV3
+        print
+        print "{} RowCountSummary".format(state)
+        print "CSV(Not reliable for FEMAHQ and StateEOC Count): {} HIFLD: {} HZ: {}".format(TotalCSVRows, HIFLDRowCount, HzRowCount)
         
 except:
     print " exception Move Data from Staging to HAZUS Tables"

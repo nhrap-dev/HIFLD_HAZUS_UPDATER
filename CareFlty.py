@@ -189,6 +189,7 @@ print
 
 
 print "Copy Downloaded HIFLD CSV to SQL Staging Table..."
+RowCountCSV1 = 0
 # CSV 1
 try:
     # Define the columns that data will be inserted into
@@ -234,6 +235,7 @@ try:
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
+                    RowCountCSV1 += 1
                     # there are several records with funky ANSI 
                     # character, but not utf-8. Possibly not ASCII character.
                     csvAddress = row["ADDRESS"].decode("utf-8").encode("ascii", "ignore")
@@ -308,15 +310,16 @@ try:
                                         row["BEDS"], \
                                         row["TRAUMA"], \
                                         row["HELIPAD"]])
+                        conn.commit()
                     except:
                         print " cursor execute insertData CSV exception: ID {}".format(row["ID"])
-            conn.commit()
         except:
             print " csv dict exception"
 except:
     print " exception Copy Downloaded HIFLD CSV to Staging Table"
 print "Done"
 # CSV 2
+RowCountCSV2 = 0
 try:
     # Define the columns that data will be inserted into
     hifld_CareFlty_Columns = "NAME, \
@@ -344,6 +347,7 @@ try:
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
+                    RowCountCSV2 += 1
                     sqlInsertData = "INSERT INTO ["+state+"]..[hifld_CareFlty] ("\
                                     +hifld_CareFlty_Columns+") \
                                     VALUES \
@@ -374,9 +378,9 @@ try:
                                         row["NAICSDESCR"], \
                                         row["FIPS"], \
                                         row["OPER_DATE"][:4]])
+                        conn.commit()
                     except:
                         print " cursor execute insertData CSV2 exception: NAME {}".format(row["NAME"])
-            conn.commit()
         except:
             print " csv dict exception 2"
 except:
@@ -851,6 +855,26 @@ try:
         except Exception as e:
             print " cursor execute Insert Into eqCareFlty exception: {}".format((e))
         print " done"
+
+        # Get row count for HIFLD and HAZUS tables
+        try:
+            cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hifldtable)
+            rows = cursor.fetchall()
+            for row in rows:
+                HIFLDRowCount = row.Column1
+        except Exception as e:
+            print " cursor execute row count hifld  exception: {}".format((e))
+        try:
+            cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hzTable)
+            rows = cursor.fetchall()
+            for row in rows:
+                HzRowCount = row.Column1
+        except Exception as e:
+            print " cursor execute row count Hz  exception: {}".format((e))
+        TotalCSVRows = RowCountCSV1 + RowCountCSV2
+        print
+        print "{} RowCountSummary".format(state)
+        print "CSV: {} HIFLD: {} HZ: {}".format(TotalCSVRows, HIFLDRowCount, HzRowCount)
         
 except:
     print " exception Move Data from Staging to HAZUS Tables"

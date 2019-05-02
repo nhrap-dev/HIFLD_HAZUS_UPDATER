@@ -187,7 +187,8 @@ try:
                             Kitchen smallint, \
                             BackupPower smallint, \
                             ShelterCapacity int,\
-                            Population smallint")
+                            Population smallint,\
+                            NumStudents int")
             conn.commit()
         except Exception as e:
             print "  cursor ALTER TABLE exception: {}".format((e))
@@ -198,6 +199,7 @@ print
 
 
 print "Copy Downloaded HIFLD Public School CSV to SQL Staging Table..."
+RowCountCSV1 = 0
 try:
     # Define the columns that data will be inserted into
     hifld_School_Columns = "ID, \
@@ -214,7 +216,8 @@ try:
                             NAICSCODE, \
                             NAICSDESCR, \
                             Population, \
-                            EfClass"
+                            EfClass, \
+                            NumStudents"
     for state in existingDatabaseList:
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
@@ -227,11 +230,13 @@ try:
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
+                    RowCountCSV1 += 1
                     # This list order must match the order of the created table that it's being inserted into                 
                     sqlInsertData = "INSERT INTO ["+state+"]..[hifld_School] ("\
                                     +hifld_School_Columns+") \
                                     VALUES \
                                     (?, \
+                                    ?, \
                                     ?, \
                                     ?, \
                                     ?, \
@@ -262,11 +267,12 @@ try:
                                         row["NAICS_CODE"], \
                                         row["NAICS_DESC"],
                                         row["POPULATION"], \
-                                        "EFS1"])
+                                        "EFS1", \
+                                        row["ENROLLMENT"]])
+                        conn.commit()
                     except Exception as e:
                         print " cursor execute insertData CSV exception: ID {}, {}".format(row["NCESID"], (e))
                         print row
-            conn.commit()
         except Exception as e:
             print " csv dict exception: {}".format((e))
             print row
@@ -277,6 +283,7 @@ print
         
 
 print "Copy Downloaded HIFLD Private School CSV2 to SQL Staging Table..."
+RowCountCSV2 = 0
 try:
     # Define the columns that data will be inserted into
     hifld_School_Columns = "ID, \
@@ -293,7 +300,8 @@ try:
                                 NAICSCODE, \
                                 NAICSDESCR, \
                                 Population, \
-                                EfClass"
+                                EfClass, \
+                                NumStudents"
     for state in existingDatabaseList:
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
@@ -306,11 +314,13 @@ try:
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
+                    RowCountCSV2 += 1
                     # This list order must match the order of the created table that it's being inserted into                 
                     sqlInsertData = "INSERT INTO ["+state+"]..[hifld_School] ("\
                                     +hifld_School_Columns+") \
                                     VALUES \
                                     (?, \
+                                    ?, \
                                     ?, \
                                     ?, \
                                     ?, \
@@ -341,10 +351,11 @@ try:
                                         row["NAICS_CODE"], \
                                         row["NAICS_DESC"],
                                         row["POPULATION"],
-                                        "EFS1"])
+                                        "EFS1", \
+                                        row["ENROLLMENT"]])
+                        conn.commit()
                     except Exception as e:
                         print " cursor execute insertData CSV2 exception: ID {}, {}".format(row["NCESID"], (e))
-            conn.commit()
         except:
             print " csv2 dict exception"
 except:
@@ -354,6 +365,7 @@ print
 
 
 print "Copy Downloaded HIFLD Colleges and Universities CSV3 to SQL Staging Table..."
+RowCountCSV3 = 0
 try:
     # Define the columns that data will be inserted into
     hifld_School_Columns = "ID, \
@@ -370,7 +382,8 @@ try:
                                 NAICSCODE, \
                                 NAICSDESCR, \
                                 Population, \
-                                EfClass"
+                                EfClass, \
+                                NumStudents"
     for state in existingDatabaseList:
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
@@ -383,11 +396,13 @@ try:
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
+                    RowCountCSV3 += 1
                     # This list order must match the order of the created table that it's being inserted into                 
                     sqlInsertData = "INSERT INTO ["+state+"]..[hifld_School] ("\
                                     +hifld_School_Columns+") \
                                     VALUES \
                                     (?, \
+                                    ?, \
                                     ?, \
                                     ?, \
                                     ?, \
@@ -418,10 +433,11 @@ try:
                                         row["NAICS_CODE"], \
                                         row["NAICS_DESC"],
                                         row["POPULATION"], \
-                                        "EFS2"])
+                                        "EFS2", \
+                                        row["TOT_ENROLL"]])
+                        conn.commit()
                     except Exception as e:
                         print " cursor execute insertData CSV3 exception: ID {}, {}".format(row["IPEDSID"], (e))
-            conn.commit()
         except:
             print " csv3 dict exception"
 except:
@@ -429,7 +445,8 @@ except:
 print "Done"
 print
 
-print "Copy Downloaded HIFLD Supplmental Colleges CSV4 to SQL Staging Table..."
+print "Copy Downloaded HIFLD Supplemental Colleges CSV4 to SQL Staging Table..."
+RowCountCSV4 = 0
 try:
     # Define the columns that data will be inserted into
     hifld_School_Columns = "ID, \
@@ -446,7 +463,8 @@ try:
                                 NAICSCODE, \
                                 NAICSDESCR, \
                                 Population, \
-                                EfClass"
+                                EfClass, \
+                                NumStudents"
     for state in existingDatabaseList:
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
@@ -459,11 +477,13 @@ try:
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
+                    RowCountCSV4 += 1
                     # This list order must match the order of the created table that it's being inserted into                 
                     sqlInsertData = "INSERT INTO ["+state+"]..[hifld_School] ("\
                                     +hifld_School_Columns+") \
                                     VALUES \
                                     (?, \
+                                    ?, \
                                     ?, \
                                     ?, \
                                     ?, \
@@ -494,10 +514,11 @@ try:
                                         row["NAICS_CODE"], \
                                         row["NAICS_DESC"],
                                         row["POPULATION"], \
-                                        "EFS2"])
+                                        "EFS2", \
+                                        row["ENROLL"]])
+                        conn.commit()
                     except Exception as e:
                         print " cursor execute insertData CSV4 exception: ID {}, {}".format(row["IPEDSID"], (e))
-            conn.commit()
         except:
             print " csv4 dict exception"
 except:
@@ -884,6 +905,16 @@ try:
             conn.commit()
         except Exception as e:
             print " cursor execute Update MedianYearBuilt <1939 exception: {}".format((e))
+
+        # Update NumStudents values < 1 to be NULL before moving into HAZUS tables
+        try:
+            updateData = "UPDATE "+hifldtable+" \
+                            SET NumStudents = NULL \
+                            WHERE NumStudents < 1"
+            cursor.execute(updateData)
+            conn.commit()
+        except Exception as e:
+            print " cursor execute Update MedianYearBuilt <1939 exception: {}".format((e))
         
         # CONDITION DATA TO FIT WITHIN MAX LIMITS
         # Calculate the truncated fields
@@ -965,6 +996,7 @@ try:
                             PhoneNumber, \
                             YearBuilt, \
                             Cost, \
+                            NumStudents, \
                             Latitude, \
                             Longitude, \
                             Area, \
@@ -978,14 +1010,15 @@ try:
                             SchoolId, \
                             EfClass, \
                             CensusTractId, \
-                            NameTrunc, \
+                            NameTRUNC, \
                             AddressTRUNC, \
                             LEFT(City, 40), \
                             Zip, \
                             State, \
-                            Telephone, \
+                            RIGHT(Telephone,14), \
                             MedianYearBuilt, \
                             Cost, \
+                            NumStudents, \
                             Y, \
                             X, \
                             Area, \
@@ -1068,6 +1101,26 @@ try:
         except Exception as e:
             print " cursor execute Insert Into eqSchool exception: {}".format((e))
         print " done"
+
+        # Get row count for HIFLD and HAZUS tables
+        try:
+            cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hifldtable)
+            rows = cursor.fetchall()
+            for row in rows:
+                HIFLDRowCount = row.Column1
+        except Exception as e:
+            print " cursor execute row count hifld  exception: {}".format((e))
+        try:
+            cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hzTable)
+            rows = cursor.fetchall()
+            for row in rows:
+                HzRowCount = row.Column1
+        except Exception as e:
+            print " cursor execute row count Hz  exception: {}".format((e))
+        TotalCSVRows = RowCountCSV1 + RowCountCSV2 + RowCountCSV3 + RowCountCSV4
+        print
+        print "{} RowCountSummary".format(state)
+        print "CSV: {} HIFLD: {} HZ: {}".format(TotalCSVRows, HIFLDRowCount, HzRowCount)
         
 except:
     print " exception Move Data from Staging to HAZUS Tables"
@@ -1090,5 +1143,4 @@ print
 
     
 print "Big Done."
-
 
