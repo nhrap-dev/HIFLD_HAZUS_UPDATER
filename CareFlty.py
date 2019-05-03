@@ -189,8 +189,9 @@ print
 
 
 print "Copy Downloaded HIFLD CSV to SQL Staging Table..."
-RowCountCSV1 = 0
+
 # CSV 1
+RowCountCSV1Dict = {}
 try:
     # Define the columns that data will be inserted into
     hifld_CareFlty_Columns = "ID, \
@@ -224,6 +225,7 @@ try:
                             TRAUMA, \
                             HELIPAD"
     for state in existingDatabaseList:
+        RowCountCSV1 = 0
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
                         ";Database="+state+";UID="+UserName+";PWD="+Password
@@ -234,7 +236,8 @@ try:
             f = open(tempCSVPath)
             reader = csv.DictReader(f)
             for row in reader:
-                if row["STATE"] == state:
+                # Do not load facilities with Status = Closed
+                if row["STATE"] == state and row["STATUS"] <> "CLOSED":
                     RowCountCSV1 += 1
                     # there are several records with funky ANSI 
                     # character, but not utf-8. Possibly not ASCII character.
@@ -315,11 +318,12 @@ try:
                         print " cursor execute insertData CSV exception: ID {}".format(row["ID"])
         except:
             print " csv dict exception"
+        RowCountCSV1Dict[state] = RowCountCSV1
 except:
     print " exception Copy Downloaded HIFLD CSV to Staging Table"
 print "Done"
 # CSV 2
-RowCountCSV2 = 0
+RowCountCSV2Dict = {}
 try:
     # Define the columns that data will be inserted into
     hifld_CareFlty_Columns = "NAME, \
@@ -336,6 +340,7 @@ try:
                             BEDS, \
                             MedianYearBuilt"
     for state in existingDatabaseList:
+        RowCountCSV2 = 0
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
                         ";Database="+state+";UID="+UserName+";PWD="+Password
@@ -383,6 +388,7 @@ try:
                         print " cursor execute insertData CSV2 exception: NAME {}".format(row["NAME"])
         except:
             print " csv dict exception 2"
+        RowCountCSV2Dict[state] = RowCountCSV2
 except:
     print " exception Copy Downloaded HIFLD CSV2 to Staging Table"
 print "Done"
@@ -398,6 +404,21 @@ try:
         conn = pyodbc.connect(connectString, autocommit=False)
         cursor = conn.cursor()
         hifldtable = "["+state+"]..[hifld_CareFlty]"
+
+        # If territory, add BldgSchemesId then set to null before completing script
+        if state in ["GU", "AS", "VI", "MP"]:
+            connectString = "Driver={SQL Server};Server="+userDefinedServer+\
+                            ";Database="+state+";UID="+UserName+";PWD="+Password
+            conn = pyodbc.connect(connectString, autocommit=False)
+            cursor = conn.cursor()
+            hzTracttable = "["+state+"]..[hzTract]"
+
+            # Set BldgSchemesId
+            try:
+                cursor.execute("UPDATE "+hzTracttable+" SET BldgSchemesId = '"+state+"1"+"'")
+                conn.commit()
+            except:
+                print " cursor execute UPDATE hzTract"
 
         # CareFltyId (State abbreviation plus 6 digits eg WA123456,
         # this must be unique and will persist across four tables.
@@ -692,6 +713,21 @@ try:
             conn.commit()
         except:
             print " cursor execute TRUNC Fields to be under 40 exception"
+
+        # If territory, add BldgSchemesId then set to null before completing script
+        if state in ["GU", "AS", "VI", "MP"]:
+            connectString = "Driver={SQL Server};Server="+userDefinedServer+\
+                            ";Database="+state+";UID="+UserName+";PWD="+Password
+            conn = pyodbc.connect(connectString, autocommit=False)
+            cursor = conn.cursor()
+            hzTracttable = "["+state+"]..[hzTract]"
+
+            # Set BldgSchemesId
+            try:
+                cursor.execute("UPDATE "+hzTracttable+" SET BldgSchemesId = NULL")
+                conn.commit()
+            except:
+                print " cursor execute UPDATE hzTract"
             
 except:
     print " exception Calculate hifld_CareFlty Fields"
@@ -699,186 +735,196 @@ print "Done"
 print
 
 
-print "Move data from the HIFLD staging table to the HAZUS tables."
-try:
-    for state in existingDatabaseList:
-        print state
-        hifldTable = "["+state+"]..[hifld_CareFlty]"
-        hzTable = "["+state+"]..[hzCareFlty]"
-        flTable = "["+state+"]..[flCareFlty]"
-        eqTable = "["+state+"]..[eqCareFlty]"
-        
-        connectString = "Driver={SQL Server};Server="+userDefinedServer+\
-                        ";Database="+state+";UID="+UserName+";PWD="+Password
-        conn = pyodbc.connect(connectString, autocommit=False)
-        cursor = conn.cursor()
+tempRowCountPath = os.path.join(tempDir, "rowcount_CareFlty.txt")
+with open(tempRowCountPath, "w") as xf:
+    print "Move data from the HIFLD staging table to the HAZUS tables."
+    try:
+        for state in existingDatabaseList:
+            print state
+            hifldTable = "["+state+"]..[hifld_CareFlty]"
+            hzTable = "["+state+"]..[hzCareFlty]"
+            flTable = "["+state+"]..[flCareFlty]"
+            eqTable = "["+state+"]..[eqCareFlty]"
+            
+            connectString = "Driver={SQL Server};Server="+userDefinedServer+\
+                            ";Database="+state+";UID="+UserName+";PWD="+Password
+            conn = pyodbc.connect(connectString, autocommit=False)
+            cursor = conn.cursor()
 
-        # Remove HAZUS rows
-        print " Remove HAZUS rows from hzCareFlty"
-        try:
-            cursor.execute("TRUNCATE TABLE "+hzTable)
-            conn.commit()
-        except:
-            print " cursor execute Delete HAZUS from hzCareFlty exception"
-        print " done"
-        
-        print " Remove hazus rows from flCareFlty"
-        try:
-            cursor.execute("TRUNCATE TABLE "+flTable)
-            conn.commit()
-        except:
-            print " cursor execute Delete HAZUS from flCareFlty exception"
-        print " done"
-        
-        print " Remove hazus rows from eqCareFlty"
-        try:
-            cursor.execute("TRUNCATE TABLE "+eqTable)
-            conn.commit()
-        except:
-            print " cursor execute Delete HAZUS from eqCareFlty exception"
-        print " done"
+            # Remove HAZUS rows
+            print " Remove HAZUS rows from hzCareFlty"
+            try:
+                cursor.execute("TRUNCATE TABLE "+hzTable)
+                conn.commit()
+            except:
+                print " cursor execute Delete HAZUS from hzCareFlty exception"
+            print " done"
+            
+            print " Remove hazus rows from flCareFlty"
+            try:
+                cursor.execute("TRUNCATE TABLE "+flTable)
+                conn.commit()
+            except:
+                print " cursor execute Delete HAZUS from flCareFlty exception"
+            print " done"
+            
+            print " Remove hazus rows from eqCareFlty"
+            try:
+                cursor.execute("TRUNCATE TABLE "+eqTable)
+                conn.commit()
+            except:
+                print " cursor execute Delete HAZUS from eqCareFlty exception"
+            print " done"
 
-        # Copy Rows from HIFLD to HAZUS hazard
-        print " Copy rows from hifld_CareFlty to hzCareFlty..."
-        try:
-            cursor.execute("INSERT INTO "+hzTable+" \
-                            (Shape, \
-                            CareFltyId, \
-                            EfClass, \
-                            Tract, \
-                            Name, \
-                            Address, \
-                            City, \
-                            Zipcode, \
-                            Statea, \
-                            PhoneNumber, \
-                            Usage, \
-                            YearBuilt, \
-                            Cost, \
-                            BackupPower, \
-                            NumBeds, \
-                            Latitude, \
-                            Longitude, \
-                            Comment) \
-                            \
-                            SELECT \
-                            Shape, \
-                            CareFltyId, \
-                            EfClass, \
-                            CensusTractId, \
-                            LEFT(Name,40), \
-                            AddressTRUNC, \
-                            LEFT(City, 40), \
-                            Zip, \
-                            State, \
-                            Telephone, \
-                            Usage, \
-                            MedianYearBuilt, \
-                            Cost, \
-                            0, \
-                            Beds, \
-                            Latitude, \
-                            Longitude, \
-                            NAICS_CODE \
-                            \
-                            FROM "+hifldTable+\
-                            " WHERE CareFltyId IS NOT NULL \
-                            AND EfClass IS NOT NULL \
-                            AND CensusTractId IS NOT NULL\
-                            ORDER BY CareFltyId ASC")
-            conn.commit()
-        except Exception as e:
-            print " cursor execute Insert Into hzCareFlty exception: {}".format((e))
-        print " done"
-        
-        # Copy Rows from HIFLD to HAZUS flood
-        print " Copy rows from hifld_CareFlty to flCareFlty..."
-        try:
-            cursor.execute("INSERT INTO "+flTable+"\
-                            (CareFltyId, \
-                            BldgType, \
-                            DesignLevel, \
-                            FoundationType, \
-                            FirstFloorHt, \
-                            BldgDamageFnId, \
-                            ContDamageFnId, \
-                            FloodProtection) \
-                            \
-                            SELECT \
-                            CareFltyId, \
-                            BldgType, \
-                            LEFT(eqDesignLevel,1), \
-                            FoundationType, \
-                            FirstFloorHt, \
-                            BldgDamageFnId, \
-                            ContDamageFnId, \
-                            FloodProtection \
-                            \
-                            FROM "+hifldTable+\
-                            " WHERE CareFltyId IS NOT NULL \
-                            AND CensusTractId IS NOT NULL\
-                            ORDER BY CareFltyId ASC")
-            conn.commit()
-        except Exception as e:
-            print " cursor execute Insert Into flCareFlty exception: {}".format((e))
-        print " done"
-        
-        # Copy Rows from HIFLD to HAZUS earthquake
-        print " Copy rows from hifld_CareFlty to eqCareFlty..."
-        try:
-            cursor.execute("INSERT INTO "+eqTable+" \
-                            (CareFltyId, \
-                            eqBldgType, \
-                            DesignLevel, \
-                            FoundationType, \
-                            SoilType, \
-                            LqfSusCat, \
-                            LndSusCat, \
-                            WaterDepth) \
-                            \
-                            SELECT \
-                            CareFltyId, \
-                            eqBldgType, \
-                            eqDesignLevel, \
-                            0, \
-                            'D', \
-                            0, \
-                            0, \
-                            5 \
-                            FROM "+hifldTable+\
-                            " WHERE CareFltyId IS NOT NULL \
-                            AND eqBldgType IS NOT NULL \
-                            AND eqDesignLevel IS NOT NULL \
-                            AND CensusTractId IS NOT NULL\
-                            ORDER BY CareFltyId ASC")
-            conn.commit()
-        except Exception as e:
-            print " cursor execute Insert Into eqCareFlty exception: {}".format((e))
-        print " done"
+            # Copy Rows from HIFLD to HAZUS hazard
+            print " Copy rows from hifld_CareFlty to hzCareFlty..."
+            try:
+                cursor.execute("INSERT INTO "+hzTable+" \
+                                (Shape, \
+                                CareFltyId, \
+                                EfClass, \
+                                Tract, \
+                                Name, \
+                                Address, \
+                                City, \
+                                Zipcode, \
+                                Statea, \
+                                PhoneNumber, \
+                                Usage, \
+                                YearBuilt, \
+                                Cost, \
+                                BackupPower, \
+                                NumBeds, \
+                                Latitude, \
+                                Longitude, \
+                                Comment) \
+                                \
+                                SELECT \
+                                Shape, \
+                                CareFltyId, \
+                                EfClass, \
+                                CensusTractId, \
+                                LEFT(Name,40), \
+                                AddressTRUNC, \
+                                LEFT(City, 40), \
+                                Zip, \
+                                State, \
+                                Telephone, \
+                                Usage, \
+                                MedianYearBuilt, \
+                                Cost, \
+                                0, \
+                                Beds, \
+                                Latitude, \
+                                Longitude, \
+                                NAICS_CODE \
+                                \
+                                FROM "+hifldTable+\
+                                " WHERE CareFltyId IS NOT NULL \
+                                AND EfClass IS NOT NULL \
+                                AND CensusTractId IS NOT NULL\
+                                ORDER BY CareFltyId ASC")
+                conn.commit()
+            except Exception as e:
+                print " cursor execute Insert Into hzCareFlty exception: {}".format((e))
+            print " done"
+            
+            # Copy Rows from HIFLD to HAZUS flood
+            print " Copy rows from hifld_CareFlty to flCareFlty..."
+            try:
+                cursor.execute("INSERT INTO "+flTable+"\
+                                (CareFltyId, \
+                                BldgType, \
+                                DesignLevel, \
+                                FoundationType, \
+                                FirstFloorHt, \
+                                BldgDamageFnId, \
+                                ContDamageFnId, \
+                                FloodProtection) \
+                                \
+                                SELECT \
+                                CareFltyId, \
+                                BldgType, \
+                                LEFT(eqDesignLevel,1), \
+                                FoundationType, \
+                                FirstFloorHt, \
+                                BldgDamageFnId, \
+                                ContDamageFnId, \
+                                FloodProtection \
+                                \
+                                FROM "+hifldTable+\
+                                " WHERE CareFltyId IS NOT NULL \
+                                AND CensusTractId IS NOT NULL\
+                                ORDER BY CareFltyId ASC")
+                conn.commit()
+            except Exception as e:
+                print " cursor execute Insert Into flCareFlty exception: {}".format((e))
+            print " done"
+            
+            # Copy Rows from HIFLD to HAZUS earthquake
+            print " Copy rows from hifld_CareFlty to eqCareFlty..."
+            try:
+                cursor.execute("INSERT INTO "+eqTable+" \
+                                (CareFltyId, \
+                                eqBldgType, \
+                                DesignLevel, \
+                                FoundationType, \
+                                SoilType, \
+                                LqfSusCat, \
+                                LndSusCat, \
+                                WaterDepth) \
+                                \
+                                SELECT \
+                                CareFltyId, \
+                                eqBldgType, \
+                                eqDesignLevel, \
+                                0, \
+                                'D', \
+                                0, \
+                                0, \
+                                5 \
+                                FROM "+hifldTable+\
+                                " WHERE CareFltyId IS NOT NULL \
+                                AND eqBldgType IS NOT NULL \
+                                AND eqDesignLevel IS NOT NULL \
+                                AND CensusTractId IS NOT NULL\
+                                ORDER BY CareFltyId ASC")
+                conn.commit()
+            except Exception as e:
+                print " cursor execute Insert Into eqCareFlty exception: {}".format((e))
+            print " done"
 
-        # Get row count for HIFLD and HAZUS tables
-        try:
-            cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hifldtable)
-            rows = cursor.fetchall()
-            for row in rows:
-                HIFLDRowCount = row.Column1
-        except Exception as e:
-            print " cursor execute row count hifld  exception: {}".format((e))
-        try:
-            cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hzTable)
-            rows = cursor.fetchall()
-            for row in rows:
-                HzRowCount = row.Column1
-        except Exception as e:
-            print " cursor execute row count Hz  exception: {}".format((e))
-        TotalCSVRows = RowCountCSV1 + RowCountCSV2
-        print
-        print "{} RowCountSummary".format(state)
-        print "CSV: {} HIFLD: {} HZ: {}".format(TotalCSVRows, HIFLDRowCount, HzRowCount)
-        
-except:
-    print " exception Move Data from Staging to HAZUS Tables"
-print
+            # Get row count for HIFLD and HAZUS tables
+            try:
+                cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hifldtable)
+                rows = cursor.fetchall()
+                for row in rows:
+                    HIFLDRowCount = row.Column1
+            except Exception as e:
+                print " cursor execute row count hifld exception: {}".format((e))
+            try:
+                cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hzTable)
+                rows = cursor.fetchall()
+                for row in rows:
+                    HzRowCount = row.Column1
+            except Exception as e:
+                print " cursor execute row count Hz exception: {}".format((e))
+            csvSum1 = RowCountCSV1Dict.get(state)
+            if csvSum1 is None:
+                csvSum1 = 0
+            csvSum2 = RowCountCSV2Dict.get(state)
+            if csvSum2 is None:
+                csvSum2 = 0
+            TotalCSVRows = csvSum1 + csvSum2
+            print
+            print "{} RowCountSummary".format(state)
+            print "CSV: {} HIFLD: {} HZ: {}".format(TotalCSVRows, HIFLDRowCount, HzRowCount)
+            print
+            outstring = "{} CSV: {} HIFLD: {} HZ: {} \n".format(state, TotalCSVRows, HIFLDRowCount, HzRowCount)
+            xf.write(outstring)
+    except:
+        print " exception Move Data from Staging to HAZUS Tables"
+    print
 
 
 ##Cleanup shape field in staging table
@@ -896,7 +942,7 @@ print
 ##    print " exception Clean up Shape field"
 
 
-    
+xf.close()
 print "Big Done."
 
 

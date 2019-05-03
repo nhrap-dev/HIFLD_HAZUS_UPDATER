@@ -19,6 +19,7 @@ import urllib
 import csv
 import pyodbc
 import ConfigParser
+import codecs
 
 
 print "Read config.ini file..."
@@ -124,7 +125,7 @@ try:
             createTable = "CREATE TABLE hifld_School \
                             (ID varchar(150), \
                             NAME varchar(150), \
-                            ADDRESS varchar(50), \
+                            ADDRESS varchar(150), \
                             CITY varchar(50), \
                             STATE varchar(50), \
                             ZIP int, \
@@ -187,8 +188,8 @@ try:
                             Kitchen smallint, \
                             BackupPower smallint, \
                             ShelterCapacity int,\
-                            Population smallint,\
-                            NumStudents int")
+                            Population int,\
+                            NumStudents smallint")
             conn.commit()
         except Exception as e:
             print "  cursor ALTER TABLE exception: {}".format((e))
@@ -199,7 +200,7 @@ print
 
 
 print "Copy Downloaded HIFLD Public School CSV to SQL Staging Table..."
-RowCountCSV1 = 0
+RowCountCSV1Dict = {}
 try:
     # Define the columns that data will be inserted into
     hifld_School_Columns = "ID, \
@@ -219,6 +220,7 @@ try:
                             EfClass, \
                             NumStudents"
     for state in existingDatabaseList:
+        RowCountCSV1 = 0
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
                         ";Database="+state+";UID="+UserName+";PWD="+Password
@@ -226,7 +228,7 @@ try:
         cursor = conn.cursor()
         # Iterate CSV and insert into sql
         try:
-            f = open(tempCSVPath)
+            f = codecs.open(tempCSVPath, encoding='utf-8-sig')
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
@@ -252,9 +254,10 @@ try:
                                     ?, \
                                     ?)"
                     try:
+                        csvNAME = row["NAME"].decode("utf-8").encode("ascii", "ignore")
                         cursor.execute(sqlInsertData,
                                        [row["NCESID"], \
-                                        row["NAME"], \
+                                        csvNAME, \
                                         row["ADDRESS"], \
                                         row["CITY"], \
                                         row["STATE"], \
@@ -272,10 +275,9 @@ try:
                         conn.commit()
                     except Exception as e:
                         print " cursor execute insertData CSV exception: ID {}, {}".format(row["NCESID"], (e))
-                        print row
+                    RowCountCSV1Dict[state] = RowCountCSV1
         except Exception as e:
-            print " csv dict exception: {}".format((e))
-            print row
+            print " csv dict exception: ID {}, {}".format(row["NCESID"], (e))
 except:
     print " exception Copy Downloaded HIFLD CSV to Staging Table"
 print "Done"
@@ -283,26 +285,27 @@ print
         
 
 print "Copy Downloaded HIFLD Private School CSV2 to SQL Staging Table..."
-RowCountCSV2 = 0
+RowCountCSV2Dict = {}
 try:
     # Define the columns that data will be inserted into
     hifld_School_Columns = "ID, \
-                                NAME, \
-                                ADDRESS, \
-                                CITY, \
-                                STATE, \
-                                ZIP, \
-                                TELEPHONE, \
-                                TYPE, \
-                                COUNTY, \
-                                Y, \
-                                X, \
-                                NAICSCODE, \
-                                NAICSDESCR, \
-                                Population, \
-                                EfClass, \
-                                NumStudents"
+                            NAME, \
+                            ADDRESS, \
+                            CITY, \
+                            STATE, \
+                            ZIP, \
+                            TELEPHONE, \
+                            TYPE, \
+                            COUNTY, \
+                            Y, \
+                            X, \
+                            NAICSCODE, \
+                            NAICSDESCR, \
+                            Population, \
+                            EfClass, \
+                            NumStudents"
     for state in existingDatabaseList:
+        RowCountCSV2 = 0
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
                         ";Database="+state+";UID="+UserName+";PWD="+Password
@@ -310,7 +313,7 @@ try:
         cursor = conn.cursor()
         # Iterate CSV and insert into sql
         try:
-            f = open(tempCSVPath2)
+            f = codecs.open(tempCSVPath2, encoding='utf-8-sig')
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
@@ -336,9 +339,10 @@ try:
                                     ?, \
                                     ?)"
                     try:
+                        csvNAME = row["NAME"].decode("utf-8").encode("ascii", "ignore")
                         cursor.execute(sqlInsertData,
                                        [row["NCESID"], \
-                                        row["NAME"], \
+                                        csvNAME, \
                                         row["ADDRESS"], \
                                         row["CITY"], \
                                         row["STATE"], \
@@ -356,8 +360,10 @@ try:
                         conn.commit()
                     except Exception as e:
                         print " cursor execute insertData CSV2 exception: ID {}, {}".format(row["NCESID"], (e))
-        except:
-            print " csv2 dict exception"
+                    RowCountCSV2Dict[state] = RowCountCSV2
+        except Exception as e:
+            print " csv2 dict exception: ID {}, {}".format(row["NCESID"], (e))
+
 except:
     print " exception Copy Downloaded HIFLD School CSV 2 to Staging Table"
 print "Done"
@@ -365,26 +371,27 @@ print
 
 
 print "Copy Downloaded HIFLD Colleges and Universities CSV3 to SQL Staging Table..."
-RowCountCSV3 = 0
+RowCountCSV3Dict = {}
 try:
     # Define the columns that data will be inserted into
     hifld_School_Columns = "ID, \
-                                NAME, \
-                                ADDRESS, \
-                                CITY, \
-                                STATE, \
-                                ZIP, \
-                                TELEPHONE, \
-                                TYPE, \
-                                COUNTY, \
-                                Y, \
-                                X, \
-                                NAICSCODE, \
-                                NAICSDESCR, \
-                                Population, \
-                                EfClass, \
-                                NumStudents"
+                            NAME, \
+                            ADDRESS, \
+                            CITY, \
+                            STATE, \
+                            ZIP, \
+                            TELEPHONE, \
+                            TYPE, \
+                            COUNTY, \
+                            Y, \
+                            X, \
+                            NAICSCODE, \
+                            NAICSDESCR, \
+                            Population, \
+                            EfClass, \
+                            NumStudents"
     for state in existingDatabaseList:
+        RowCountCSV3 = 0
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
                         ";Database="+state+";UID="+UserName+";PWD="+Password
@@ -392,7 +399,7 @@ try:
         cursor = conn.cursor()
         # Iterate CSV and insert into sql
         try:
-            f = open(tempCSVPath3)
+            f = codecs.open(tempCSVPath3, encoding='utf-8-sig')
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
@@ -418,9 +425,10 @@ try:
                                     ?, \
                                     ?)"
                     try:
+                        csvNAME = row["NAME"].decode("utf-8").encode("ascii", "ignore")
                         cursor.execute(sqlInsertData,
                                        [row["IPEDSID"], \
-                                        row["NAME"], \
+                                        csvNAME, \
                                         row["ADDRESS"], \
                                         row["CITY"], \
                                         row["STATE"], \
@@ -438,34 +446,36 @@ try:
                         conn.commit()
                     except Exception as e:
                         print " cursor execute insertData CSV3 exception: ID {}, {}".format(row["IPEDSID"], (e))
-        except:
-            print " csv3 dict exception"
+                    RowCountCSV3Dict[state] = RowCountCSV3
+        except Exception as e:
+            print " csv3 dict exception: ID {}, {}".format(row["IPEDSID"], (e))
 except:
     print " exception Copy Downloaded HIFLD CSV's to Staging Table"
 print "Done"
 print
 
 print "Copy Downloaded HIFLD Supplemental Colleges CSV4 to SQL Staging Table..."
-RowCountCSV4 = 0
+RowCountCSV4Dict = {}
 try:
     # Define the columns that data will be inserted into
     hifld_School_Columns = "ID, \
-                                NAME, \
-                                ADDRESS, \
-                                CITY, \
-                                STATE, \
-                                ZIP, \
-                                TELEPHONE, \
-                                TYPE, \
-                                COUNTY, \
-                                Y, \
-                                X, \
-                                NAICSCODE, \
-                                NAICSDESCR, \
-                                Population, \
-                                EfClass, \
-                                NumStudents"
+                            NAME, \
+                            ADDRESS, \
+                            CITY, \
+                            STATE, \
+                            ZIP, \
+                            TELEPHONE, \
+                            TYPE, \
+                            COUNTY, \
+                            Y, \
+                            X, \
+                            NAICSCODE, \
+                            NAICSDESCR, \
+                            Population, \
+                            EfClass, \
+                            NumStudents"
     for state in existingDatabaseList:
+        RowCountCSV4 = 0
         print state
         connectString = "Driver={SQL Server};Server="+userDefinedServer+\
                         ";Database="+state+";UID="+UserName+";PWD="+Password
@@ -473,7 +483,7 @@ try:
         cursor = conn.cursor()
         # Iterate CSV and insert into sql
         try:
-            f = open(tempCSVPath4)
+            f = codecs.open(tempCSVPath4, encoding='utf-8-sig')
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
@@ -499,9 +509,10 @@ try:
                                     ?, \
                                     ?)"
                     try:
+                        csvNAME = row["NAME"].decode("utf-8").encode("ascii", "ignore")
                         cursor.execute(sqlInsertData,
                                        [row["IPEDSID"], \
-                                        row["NAME"], \
+                                        csvNAME, \
                                         row["ADDRESS"], \
                                         row["CITY"], \
                                         row["STATE"], \
@@ -519,8 +530,9 @@ try:
                         conn.commit()
                     except Exception as e:
                         print " cursor execute insertData CSV4 exception: ID {}, {}".format(row["IPEDSID"], (e))
-        except:
-            print " csv4 dict exception"
+                    RowCountCSV4Dict[state] = RowCountCSV4
+        except Exception as e:
+            print " csv4 dict exception: ID {}, {}".format(row["IPEDSID"], (e))
 except:
     print " exception Copy Downloaded HIFLD CSV's to Staging Table"
 print "Done"
@@ -536,6 +548,21 @@ try:
         conn = pyodbc.connect(connectString, autocommit=False)
         cursor = conn.cursor()
         hifldtable = "["+state+"]..[hifld_School]"
+
+        # If territory, add BldgSchemesId then set to null before completing script
+        if state in ["GU", "AS", "VI", "MP"]:
+            connectString = "Driver={SQL Server};Server="+userDefinedServer+\
+                            ";Database="+state+";UID="+UserName+";PWD="+Password
+            conn = pyodbc.connect(connectString, autocommit=False)
+            cursor = conn.cursor()
+            hzTracttable = "["+state+"]..[hzTract]"
+
+            # Set BldgSchemesId
+            try:
+                cursor.execute("UPDATE "+hzTracttable+" SET BldgSchemesId = '"+state+"1"+"'")
+                conn.commit()
+            except:
+                print " cursor execute UPDATE hzTract"
 
         # SchoolId (State abbreviation plus 6 digits eg WA123456,
         # this must be unique and will persist across four tables.
@@ -934,6 +961,21 @@ try:
             conn.commit()
         except Exception as e:
             print " cursor execute TRUNC Fields to be under 40 exception: {}".format((e))
+
+        # If territory, add BldgSchemesId then set to null before completing script
+        if state in ["GU", "AS", "VI", "MP"]:
+            connectString = "Driver={SQL Server};Server="+userDefinedServer+\
+                            ";Database="+state+";UID="+UserName+";PWD="+Password
+            conn = pyodbc.connect(connectString, autocommit=False)
+            cursor = conn.cursor()
+            hzTracttable = "["+state+"]..[hzTract]"
+
+            # Set BldgSchemesId
+            try:
+                cursor.execute("UPDATE "+hzTracttable+" SET BldgSchemesId = NULL")
+                conn.commit()
+            except:
+                print " cursor execute UPDATE hzTract"
             
 except:
     print " exception Calculate hifld_School Fields"
@@ -941,190 +983,206 @@ print "Done"
 print
 
 
-print "Move data from the HIFLD staging table to the HAZUS tables."
-try:
-    for state in existingDatabaseList:
-        print state
-        hifldTable = "["+state+"]..[hifld_School]"
-        hzTable = "["+state+"]..[hzSchool]"
-        flTable = "["+state+"]..[flSchool]"
-        eqTable = "["+state+"]..[eqSchool]"
-        
-        connectString = "Driver={SQL Server};Server="+userDefinedServer+\
-                        ";Database="+state+";UID="+UserName+";PWD="+Password
-        conn = pyodbc.connect(connectString, autocommit=False)
-        cursor = conn.cursor()
+tempRowCountPath = os.path.join(tempDir, "rowcount_School.txt")
+with open(tempRowCountPath, "w") as xf:
+    print "Move data from the HIFLD staging table to the HAZUS tables."
+    try:
+        for state in existingDatabaseList:
+            print state
+            hifldTable = "["+state+"]..[hifld_School]"
+            hzTable = "["+state+"]..[hzSchool]"
+            flTable = "["+state+"]..[flSchool]"
+            eqTable = "["+state+"]..[eqSchool]"
+            
+            connectString = "Driver={SQL Server};Server="+userDefinedServer+\
+                            ";Database="+state+";UID="+UserName+";PWD="+Password
+            conn = pyodbc.connect(connectString, autocommit=False)
+            cursor = conn.cursor()
 
-        # Remove HAZUS rows
-        print " Remove HAZUS rows from hzSchool"
-        try:
-            cursor.execute("TRUNCATE TABLE "+hzTable)
-            conn.commit()
-        except:
-            print " cursor execute Delete HAZUS from hzSchool exception"
-        print " done"
-        
-        print " Remove hazus rows from flSchool"
-        try:
-            cursor.execute("TRUNCATE TABLE "+flTable)
-            conn.commit()
-        except:
-            print " cursor execute Delete HAZUS from flSchool exception"
-        print " done"
-        
-        print " Remove hazus rows from eqSchool"
-        try:
-            cursor.execute("TRUNCATE TABLE "+eqTable)
-            conn.commit()
-        except:
-            print " cursor execute Delete HAZUS from eqSchool exception"
-        print " done"
+            # Remove HAZUS rows
+            print " Remove HAZUS rows from hzSchool"
+            try:
+                cursor.execute("TRUNCATE TABLE "+hzTable)
+                conn.commit()
+            except:
+                print " cursor execute Delete HAZUS from hzSchool exception"
+            print " done"
+            
+            print " Remove hazus rows from flSchool"
+            try:
+                cursor.execute("TRUNCATE TABLE "+flTable)
+                conn.commit()
+            except:
+                print " cursor execute Delete HAZUS from flSchool exception"
+            print " done"
+            
+            print " Remove hazus rows from eqSchool"
+            try:
+                cursor.execute("TRUNCATE TABLE "+eqTable)
+                conn.commit()
+            except:
+                print " cursor execute Delete HAZUS from eqSchool exception"
+            print " done"
 
-        # Copy Rows from HIFLD to HAZUS hazard
-        print " Copy rows from hifld_School to hzSchool..."
-        try:
-            cursor.execute("INSERT INTO "+hzTable+" \
-                            (Shape, \
-                            SchoolId, \
-                            EfClass, \
-                            Tract, \
-                            Name, \
-                            Address, \
-                            City, \
-                            Zipcode, \
-                            Statea, \
-                            PhoneNumber, \
-                            YearBuilt, \
-                            Cost, \
-                            NumStudents, \
-                            Latitude, \
-                            Longitude, \
-                            Area, \
-                            ShelterCapacity, \
-                            BackupPower, \
-                            Kitchen, \
-                            Comment) \
-                            \
-                            SELECT \
-                            Shape, \
-                            SchoolId, \
-                            EfClass, \
-                            CensusTractId, \
-                            NameTRUNC, \
-                            AddressTRUNC, \
-                            LEFT(City, 40), \
-                            Zip, \
-                            State, \
-                            RIGHT(Telephone,14), \
-                            MedianYearBuilt, \
-                            Cost, \
-                            NumStudents, \
-                            Y, \
-                            X, \
-                            Area, \
-                            ShelterCapacity, \
-                            BackupPower, \
-                            Kitchen, \
-                            NAICSCODE \
-                            \
-                            FROM "+hifldTable+\
-                            " WHERE SchoolId IS NOT NULL \
-                            AND EfClass IS NOT NULL \
-                            AND CensusTractId IS NOT NULL \
-                            ORDER BY SchoolId ASC")
-            conn.commit()
-        except Exception as e:
-            print " cursor execute Insert Into hzSchool exception: {}".format((e))
-        print " done"
-        
-        # Copy Rows from HIFLD to HAZUS flood
-        print " Copy rows from hifld_School to flSchool..."
-        try:
-            cursor.execute("INSERT INTO "+flTable+"\
-                            (SchoolId, \
-                            BldgType, \
-                            DesignLevel, \
-                            FoundationType, \
-                            FirstFloorHt, \
-                            BldgDamageFnId, \
-                            ContDamageFnId, \
-                            FloodProtection) \
-                            \
-                            SELECT \
-                            SchoolId, \
-                            BldgType, \
-                            LEFT(eqDesignLevel,1), \
-                            FoundationType, \
-                            FirstFloorHt, \
-                            BldgDamageFnId, \
-                            ContDamageFnId, \
-                            FloodProtection \
-                            \
-                            FROM "+hifldTable+\
-                            " WHERE SchoolId IS NOT NULL \
-                            AND CensusTractId IS NOT NULL \
-                            ORDER BY SchoolId ASC")
-            conn.commit()
-        except Exception as e:
-            print " cursor execute Insert Into flSchool exception: {}".format((e))
-        print " done"
-        
-        # Copy Rows from HIFLD to HAZUS earthquake
-        print " Copy rows from hifld_School to eqSchool..."
-        try:
-            cursor.execute("INSERT INTO "+eqTable+" \
-                            (SchoolId, \
-                            eqBldgType, \
-                            DesignLevel, \
-                            FoundationType, \
-                            SoilType, \
-                            LqfSusCat, \
-                            LndSusCat, \
-                            WaterDepth) \
-                            \
-                            SELECT \
-                            SchoolId, \
-                            eqBldgType, \
-                            eqDesignLevel, \
-                            0, \
-                            'D', \
-                            0, \
-                            0, \
-                            5 \
-                            FROM "+hifldTable+\
-                            " WHERE SchoolId IS NOT NULL \
-                            AND eqBldgType IS NOT NULL \
-                            AND eqDesignLevel IS NOT NULL \
-                            AND CensusTractId IS NOT NULL \
-                            ORDER BY SchoolId ASC")
-            conn.commit()
-        except Exception as e:
-            print " cursor execute Insert Into eqSchool exception: {}".format((e))
-        print " done"
+            # Copy Rows from HIFLD to HAZUS hazard
+            print " Copy rows from hifld_School to hzSchool..."
+            try:
+                cursor.execute("INSERT INTO "+hzTable+" \
+                                (Shape, \
+                                SchoolId, \
+                                EfClass, \
+                                Tract, \
+                                Name, \
+                                Address, \
+                                City, \
+                                Zipcode, \
+                                Statea, \
+                                PhoneNumber, \
+                                YearBuilt, \
+                                Cost, \
+                                NumStudents, \
+                                Latitude, \
+                                Longitude, \
+                                Area, \
+                                ShelterCapacity, \
+                                BackupPower, \
+                                Kitchen, \
+                                Comment) \
+                                \
+                                SELECT \
+                                Shape, \
+                                SchoolId, \
+                                EfClass, \
+                                CensusTractId, \
+                                NameTRUNC, \
+                                AddressTRUNC, \
+                                LEFT(City, 40), \
+                                Zip, \
+                                State, \
+                                RIGHT(Telephone,14), \
+                                MedianYearBuilt, \
+                                Cost, \
+                                NumStudents, \
+                                Y, \
+                                X, \
+                                Area, \
+                                ShelterCapacity, \
+                                BackupPower, \
+                                Kitchen, \
+                                NAICSCODE \
+                                \
+                                FROM "+hifldTable+\
+                                " WHERE SchoolId IS NOT NULL \
+                                AND EfClass IS NOT NULL \
+                                AND CensusTractId IS NOT NULL \
+                                ORDER BY SchoolId ASC")
+                conn.commit()
+            except Exception as e:
+                print " cursor execute Insert Into hzSchool exception: {}".format((e))
+            print " done"
+            
+            # Copy Rows from HIFLD to HAZUS flood
+            print " Copy rows from hifld_School to flSchool..."
+            try:
+                cursor.execute("INSERT INTO "+flTable+"\
+                                (SchoolId, \
+                                BldgType, \
+                                DesignLevel, \
+                                FoundationType, \
+                                FirstFloorHt, \
+                                BldgDamageFnId, \
+                                ContDamageFnId, \
+                                FloodProtection) \
+                                \
+                                SELECT \
+                                SchoolId, \
+                                BldgType, \
+                                LEFT(eqDesignLevel,1), \
+                                FoundationType, \
+                                FirstFloorHt, \
+                                BldgDamageFnId, \
+                                ContDamageFnId, \
+                                FloodProtection \
+                                \
+                                FROM "+hifldTable+\
+                                " WHERE SchoolId IS NOT NULL \
+                                AND CensusTractId IS NOT NULL \
+                                ORDER BY SchoolId ASC")
+                conn.commit()
+            except Exception as e:
+                print " cursor execute Insert Into flSchool exception: {}".format((e))
+            print " done"
+            
+            # Copy Rows from HIFLD to HAZUS earthquake
+            print " Copy rows from hifld_School to eqSchool..."
+            try:
+                cursor.execute("INSERT INTO "+eqTable+" \
+                                (SchoolId, \
+                                eqBldgType, \
+                                DesignLevel, \
+                                FoundationType, \
+                                SoilType, \
+                                LqfSusCat, \
+                                LndSusCat, \
+                                WaterDepth) \
+                                \
+                                SELECT \
+                                SchoolId, \
+                                eqBldgType, \
+                                eqDesignLevel, \
+                                0, \
+                                'D', \
+                                0, \
+                                0, \
+                                5 \
+                                FROM "+hifldTable+\
+                                " WHERE SchoolId IS NOT NULL \
+                                AND eqBldgType IS NOT NULL \
+                                AND eqDesignLevel IS NOT NULL \
+                                AND CensusTractId IS NOT NULL \
+                                ORDER BY SchoolId ASC")
+                conn.commit()
+            except Exception as e:
+                print " cursor execute Insert Into eqSchool exception: {}".format((e))
+            print " done"
 
-        # Get row count for HIFLD and HAZUS tables
-        try:
-            cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hifldtable)
-            rows = cursor.fetchall()
-            for row in rows:
-                HIFLDRowCount = row.Column1
-        except Exception as e:
-            print " cursor execute row count hifld  exception: {}".format((e))
-        try:
-            cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hzTable)
-            rows = cursor.fetchall()
-            for row in rows:
-                HzRowCount = row.Column1
-        except Exception as e:
-            print " cursor execute row count Hz  exception: {}".format((e))
-        TotalCSVRows = RowCountCSV1 + RowCountCSV2 + RowCountCSV3 + RowCountCSV4
-        print
-        print "{} RowCountSummary".format(state)
-        print "CSV: {} HIFLD: {} HZ: {}".format(TotalCSVRows, HIFLDRowCount, HzRowCount)
-        
-except:
-    print " exception Move Data from Staging to HAZUS Tables"
-print
+            # Get row count for HIFLD and HAZUS tables
+            try:
+                cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hifldtable)
+                rows = cursor.fetchall()
+                for row in rows:
+                    HIFLDRowCount = row.Column1
+            except Exception as e:
+                print " cursor execute row count hifld  exception: {}".format((e))
+            try:
+                cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hzTable)
+                rows = cursor.fetchall()
+                for row in rows:
+                    HzRowCount = row.Column1
+            except Exception as e:
+                print " cursor execute row count Hz  exception: {}".format((e))
+            csvSum1 = RowCountCSV1Dict.get(state)
+            if csvSum1 is None:
+                csvSum1 = 0
+            csvSum2 = RowCountCSV2Dict.get(state)
+            if csvSum2 is None:
+                csvSum2 = 0
+            csvSum3 = RowCountCSV3Dict.get(state)
+            if csvSum3 is None:
+                csvSum3 = 0
+            csvSum4 = RowCountCSV4Dict.get(state)
+            if csvSum4 is None:
+                csvSum4 = 0
+            TotalCSVRows = csvSum1 + csvSum2 + csvSum3 + csvSum4
+            print
+            print "{} RowCountSummary".format(state)
+            print "CSV: {} HIFLD: {} HZ: {}".format(TotalCSVRows, HIFLDRowCount, HzRowCount)
+            print
+            outstring = "{} CSV: {} HIFLD: {} HZ: {} \n".format(state, TotalCSVRows, HIFLDRowCount, HzRowCount)
+            xf.write(outstring)
+    except:
+        print " exception Move Data from Staging to HAZUS Tables"
+    print
 
 
 ##Cleanup shape field in staging table
@@ -1141,6 +1199,6 @@ print
 ##except:
 ##    print " exception Clean up Shape field"
 
-    
+xf.close()
 print "Big Done."
 
