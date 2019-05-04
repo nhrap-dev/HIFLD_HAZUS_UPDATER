@@ -790,18 +790,20 @@ with open(tempRowCountPath, "w") as xf:
             # Get row count for HIFLD and HAZUS tables
             try:
                 cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hifldtable)
-                rows = cursor.fetchall()
-                for row in rows:
-                    HIFLDRowCount = row.Column1
+                rows1 = cursor.fetchall()
+                for row1 in rows1:
+                    HIFLDRowCount = row1.Column1
             except Exception as e:
                 print " cursor execute row count hifld exception: {}".format((e))
+                
             try:
-                cursor.execute("SELECT COUNT(*) AS Column1 FROM "+hzTable)
-                rows = cursor.fetchall()
-                for row in rows:
-                    HzRowCount = row.Column1
+                cursor.execute("SELECT COUNT(*) AS Column2 FROM "+hzTable)
+                rows2 = cursor.fetchall()
+                for row2 in rows2:
+                    HzRowCount = row2.Column2
             except Exception as e:
                 print " cursor execute row count Hz exception: {}".format((e))
+                
             TotalCSVRows = RowCountCSV1Dict.get(state)
             print
             print "{} RowCountSummary".format(state)

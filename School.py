@@ -189,7 +189,7 @@ try:
                             BackupPower smallint, \
                             ShelterCapacity int,\
                             Population int,\
-                            NumStudents smallint")
+                            NumStudents int")
             conn.commit()
         except Exception as e:
             print "  cursor ALTER TABLE exception: {}".format((e))
@@ -228,11 +228,12 @@ try:
         cursor = conn.cursor()
         # Iterate CSV and insert into sql
         try:
-            f = codecs.open(tempCSVPath, encoding='utf-8-sig')
+            f = open(tempCSVPath)
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
                     RowCountCSV1 += 1
+                    csvCounty = row["COUNTY"].decode("utf-8").encode("ascii", "ignore")
                     # This list order must match the order of the created table that it's being inserted into                 
                     sqlInsertData = "INSERT INTO ["+state+"]..[hifld_School] ("\
                                     +hifld_School_Columns+") \
@@ -264,7 +265,7 @@ try:
                                         row["ZIP"], \
                                         row["TELEPHONE"], \
                                         row["TYPE"], \
-                                        row["COUNTY"], \
+                                        csvCounty, \
                                         row["Y"], \
                                         row["LONGITUDE"], \
                                         row["NAICS_CODE"], \
@@ -313,11 +314,12 @@ try:
         cursor = conn.cursor()
         # Iterate CSV and insert into sql
         try:
-            f = codecs.open(tempCSVPath2, encoding='utf-8-sig')
+            f = open(tempCSVPath2)
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
                     RowCountCSV2 += 1
+                    csvCounty = row["COUNTY"].decode("utf-8").encode("ascii", "ignore")
                     # This list order must match the order of the created table that it's being inserted into                 
                     sqlInsertData = "INSERT INTO ["+state+"]..[hifld_School] ("\
                                     +hifld_School_Columns+") \
@@ -349,7 +351,7 @@ try:
                                         row["ZIP"], \
                                         row["TELEPHONE"], \
                                         row["TYPE"], \
-                                        row["COUNTY"], \
+                                        csvCounty, \
                                         row["Y"], \
                                         row["LONGITUDE"], \
                                         row["NAICS_CODE"], \
@@ -399,11 +401,15 @@ try:
         cursor = conn.cursor()
         # Iterate CSV and insert into sql
         try:
-            f = codecs.open(tempCSVPath3, encoding='utf-8-sig')
+            f = open(tempCSVPath3)
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
                     RowCountCSV3 += 1
+                    csvCounty = row["COUNTY"].decode("utf-8").encode("ascii", "ignore")
+                    csvName = row["NAME"].decode("utf-8").encode("ascii", "ignore")
+                    csvAddress = row["ADDRESS"].decode("utf-8").encode("ascii", "ignore")
+                    csvCity = row["CITY"].decode("utf-8").encode("ascii", "ignore")
                     # This list order must match the order of the created table that it's being inserted into                 
                     sqlInsertData = "INSERT INTO ["+state+"]..[hifld_School] ("\
                                     +hifld_School_Columns+") \
@@ -429,13 +435,13 @@ try:
                         cursor.execute(sqlInsertData,
                                        [row["IPEDSID"], \
                                         csvNAME, \
-                                        row["ADDRESS"], \
-                                        row["CITY"], \
+                                        csvAddress, \
+                                        csvCity, \
                                         row["STATE"], \
                                         row["ZIP"], \
                                         row["TELEPHONE"], \
                                         row["TYPE"], \
-                                        row["COUNTY"], \
+                                        csvCounty, \
                                         row["Y"], \
                                         row["LONGITUDE"], \
                                         row["NAICS_CODE"], \
@@ -483,11 +489,15 @@ try:
         cursor = conn.cursor()
         # Iterate CSV and insert into sql
         try:
-            f = codecs.open(tempCSVPath4, encoding='utf-8-sig')
+            f = open(tempCSVPath4)
             reader = csv.DictReader(f)
             for row in reader:
                 if row["STATE"] == state:
                     RowCountCSV4 += 1
+                    csvCounty = row["COUNTY"].decode("utf-8").encode("ascii", "ignore")
+                    csvName = row["NAME"].decode("utf-8").encode("ascii", "ignore")
+                    csvAddress = row["ADDRESS"].decode("utf-8").encode("ascii", "ignore")
+                    csvCity = row["CITY"].decode("utf-8").encode("ascii", "ignore")
                     # This list order must match the order of the created table that it's being inserted into                 
                     sqlInsertData = "INSERT INTO ["+state+"]..[hifld_School] ("\
                                     +hifld_School_Columns+") \
@@ -509,17 +519,16 @@ try:
                                     ?, \
                                     ?)"
                     try:
-                        csvNAME = row["NAME"].decode("utf-8").encode("ascii", "ignore")
                         cursor.execute(sqlInsertData,
                                        [row["IPEDSID"], \
-                                        csvNAME, \
-                                        row["ADDRESS"], \
-                                        row["CITY"], \
+                                        csvName, \
+                                        csvAddress, \
+                                        csvCity, \
                                         row["STATE"], \
                                         row["ZIP"], \
                                         row["TELEPHONE"], \
                                         row["TYPE"], \
-                                        row["COUNTY"], \
+                                        csvCounty, \
                                         row["Y"], \
                                         row["LONGITUDE"], \
                                         row["NAICS_CODE"], \
@@ -961,6 +970,18 @@ try:
             conn.commit()
         except Exception as e:
             print " cursor execute TRUNC Fields to be under 40 exception: {}".format((e))
+
+        # and update to not be more than 32767, and if it is change it to 32767 (smallint limitations in hz schema)
+        try:
+            updateData = "UPDATE "+hifldtable+" \
+                            SET NumStudents = 32767 \
+                            WHERE NumStudents > 32767"
+            cursor.execute(updateData)
+            conn.commit()
+        except Exception as e:
+            print " cursor execute Update MedianYearBuilt <1939 exception: {}".format((e))
+        
+
 
         # If territory, add BldgSchemesId then set to null before completing script
         if state in ["GU", "AS", "VI", "MP"]:
