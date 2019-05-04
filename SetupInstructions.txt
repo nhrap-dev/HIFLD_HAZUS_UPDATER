@@ -13,14 +13,7 @@ PREREQUISITES:
 			in all caps. This dataset must be in WGS84.
 		3) Add cdms.dbo.eqEFBldgTypeDefault. Right click database (CDMS) and select TASK > Import Data. Flat file 
 			source.	SQL Server Native Client 11.0. Use SQL Server Auth; hazuspuser; CDMS database.
-		4) Terrotories need their State Code Levels set, the field starts off with NULLs.
-			Tables: GU|AS|VI|MP.dbo.hztract 		Field: BldgSchemesId		Values: GU1, AS1, VI1, MP1
-			For each terrotories table, set the BldgSchemesId field to the corresponding value.
-			The following SQL commands will update the table's field:
-			UPDATE GU.dbo.hzTract SET BldgSchemesId = 'GU1'
-			UPDATE [AS].[dbo].[hzTract] SET BldgSchemesId = 'AS1'
-			UPDATE VI.dbo.hzTract SET BldgSchemesId = 'VI1'
-			UPDATE MP.dbo.hzTract SET BldgSchemesId = 'MP1'
+
 STEPS:	
 	1) Copy the .py, .ini files to 'this path'.
 	2) Update the .py 'configPath' variable to point to the the .ini file from step 1.
