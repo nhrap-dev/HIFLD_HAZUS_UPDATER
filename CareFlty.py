@@ -714,14 +714,14 @@ try:
         except Exception as e:
             print " cursor execute Update BEDS < 1 exception: {}".format((e))
 
-        # Update ZIP length < 5 with prefix 0
-        try:
-            cursor.execute("UPDATE "+hifldtable+" \
-                            SET ZIP = RIGHT('00000'+cast(ZIP as varchar(5)),5) \
-                            WHERE LEN(ZIP) < 5")
-            conn.commit()
-        except Exception as e:
-            print " cursor execute Update ZIP exception: {}".format(e)
+##        # Update ZIP length < 5 with prefix 0
+##        try:
+##            cursor.execute("UPDATE "+hifldtable+" \
+##                            SET ZIP = RIGHT('00000'+cast(ZIP as varchar(5)),5) \
+##                            WHERE LEN(ZIP) < 5")
+##            conn.commit()
+##        except Exception as e:
+##            print " cursor execute Update ZIP exception: {}".format(e)
 
         # CONDITION DATA TO FIT WITHIN MAX LIMITS
         # Calculate the truncated fields
@@ -736,8 +736,8 @@ try:
                             ELSE SOURCE END)")
             cursor.execute("UPDATE "+hifldtable\
                            +" SET CommentTRUNC = \
-                            (CASE WHEN LEN(NAICSDESCR)>40 THEN CONCAT(LEFT(NAICSDESCR,37),'...') \
-                            ELSE NAICSDESCR END)")
+                            (CASE WHEN LEN(NAICS_DESC)>40 THEN CONCAT(LEFT(NAICS_DESC,37),'...') \
+                            ELSE NAICS_DESC END)")
             cursor.execute("UPDATE "+hifldtable\
                            +" SET AddressTRUNC = \
                             (CASE WHEN LEN(ADDRESS)>40 THEN CONCAT(LEFT(ADDRESS,37),'...') \

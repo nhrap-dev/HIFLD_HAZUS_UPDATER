@@ -577,14 +577,14 @@ try:
         except Exception as e:
             print " cursor execute Update MedianYearBuilt <1939 exception: {}".format((e))
 
-        # Update ZIP length < 5 with prefix 0
-        try:
-            cursor.execute("UPDATE "+hifldtable+" \
-                            SET ZIP = RIGHT('00000'+cast(ZIP as varchar(5)),5) \
-                            WHERE LEN(ZIP) < 5")
-            conn.commit()
-        except Exception as e:
-            print " cursor execute Update ZIP exception: {}".format((e))
+##        # Update ZIP length < 5 with prefix 0
+##        try:
+##            cursor.execute("UPDATE "+hifldtable+" \
+##                            SET ZIP = RIGHT('00000'+cast(ZIP as varchar(5)),5) \
+##                            WHERE LEN(ZIP) < 5")
+##            conn.commit()
+##        except Exception as e:
+##            print " cursor execute Update ZIP exception: {}".format((e))
         
         # CONDITION DATA TO FIT WITHIN MAX LIMITS
         # Calculate the truncated fields
