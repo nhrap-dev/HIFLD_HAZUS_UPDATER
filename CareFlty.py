@@ -105,7 +105,7 @@ try:
                             ADDRESS varchar(80), \
                             CITY varchar(50), \
                             STATE varchar(2), \
-                            ZIP varchar(15), \
+                            ZIP varchar(16), \
                             TELEPHONE varchar(30), \
                             TYPE varchar(20), \
                             STATUS varchar(10), \
@@ -331,6 +331,7 @@ try:
                             CITY, \
                             STATE, \
                             ZIP, \
+                            TELEPHONE, \
                             COUNTY, \
                             LATITUDE, \
                             LONGITUDE, \
@@ -367,6 +368,7 @@ try:
                                     ?, \
                                     ?, \
                                     ?, \
+                                    ?, \
                                     -999, \
                                     ?)"
                     try:
@@ -376,6 +378,7 @@ try:
                                         row["CITY"], \
                                         row["STATE"], \
                                         row["ZIP"], \
+                                        row["PHONE"], \
                                         row["COUNTY"], \
                                         row["LATITUDE"], \
                                         row["LONGITUDE"],\
@@ -690,7 +693,36 @@ try:
             conn.commit()
         except:
             print " cursor execute firstfloor modification" 
-        
+
+        # Update MedianYearBuilt values of < 1939 to be 1939 before moving into HAZUS tables
+        try:
+            updateData = "UPDATE "+hifldtable+" \
+                            SET MedianYearBuilt = 1939 \
+                            WHERE MedianYearBuilt < 1939"
+            cursor.execute(updateData)
+            conn.commit()
+        except Exception as e:
+            print " cursor execute Update MedianYearBuilt <1939 exception: {}".format((e))
+
+        # Update BEDS values < 1 to be NULL before moving into HAZUS tables
+        try:
+            updateData = "UPDATE "+hifldtable+" \
+                            SET BEDS = NULL \
+                            WHERE BEDS < 1"
+            cursor.execute(updateData)
+            conn.commit()
+        except Exception as e:
+            print " cursor execute Update BEDS < 1 exception: {}".format((e))
+
+        # Update ZIP length < 5 with prefix 0
+        try:
+            cursor.execute("UPDATE "+hifldtable+" \
+                            SET ZIP = RIGHT('00000'+cast(ZIP as varchar(5)),5) \
+                            WHERE LEN(ZIP) < 5")
+            conn.commit()
+        except Exception as e:
+            print " cursor execute Update ZIP exception: {}".format(e)
+
         # CONDITION DATA TO FIT WITHIN MAX LIMITS
         # Calculate the truncated fields
         try:
@@ -704,8 +736,8 @@ try:
                             ELSE SOURCE END)")
             cursor.execute("UPDATE "+hifldtable\
                            +" SET CommentTRUNC = \
-                            (CASE WHEN LEN(ID)>40 THEN CONCAT(LEFT(ID,37),'...') \
-                            ELSE ID END)")
+                            (CASE WHEN LEN(NAICSDESCR)>40 THEN CONCAT(LEFT(NAICSDESCR,37),'...') \
+                            ELSE NAICSDESCR END)")
             cursor.execute("UPDATE "+hifldtable\
                            +" SET AddressTRUNC = \
                             (CASE WHEN LEN(ADDRESS)>40 THEN CONCAT(LEFT(ADDRESS,37),'...') \

@@ -126,7 +126,7 @@ try:
                             ADDRESS varchar(150), \
                             CITY varchar(50), \
                             STATE varchar(50), \
-                            ZIP int, \
+                            ZIP varchar(16), \
                             TELEPHONE varchar(50), \
                             TYPE varchar(50), \
                             COUNTY varchar(50), \
@@ -765,6 +765,26 @@ try:
             conn.commit()
         except Exception as e:
             print " cursor execute Update MedianYearBuilt <1939 exception: {}".format((e))
+
+        # Update StateID
+        try:
+            cursor.execute("UPDATE a \
+                            SET a.STATE = b.ABBR \
+                            FROM [CDMS]..[cdms_StateLookup] b \
+                            INNER JOIN "+hifldtable+" a \
+                            ON a.State_Name = b.State")
+            conn.commit()
+        except:
+            print " cursor execute UPDATE StateID exception"
+
+##        # Update ZIP length < 5 with prefix 0
+##        try:
+##            cursor.execute("UPDATE "+hifldtable+" \
+##                            SET ZIP = RIGHT('00000'+cast(ZIP as varchar(5)),5) \
+##                            WHERE LEN(ZIP) < 5")
+##            conn.commit()
+##        except Exception as e:
+##            print " cursor execute Update ZIP exception: {}".format((e))
         
         # CONDITION DATA TO FIT WITHIN MAX LIMITS
         # Calculate the truncated fields
@@ -775,8 +795,8 @@ try:
                             ELSE NAME END)")
             cursor.execute("UPDATE "+hifldtable\
                            +" SET CommentTRUNC = \
-                            (CASE WHEN LEN(ID)>40 THEN CONCAT(LEFT(ID,37),'...') \
-                            ELSE ID END)")
+                            (CASE WHEN LEN(NAICSDESCR)>40 THEN CONCAT(LEFT(NAICSDESCR,37),'...') \
+                            ELSE NAICSDESCR END)")
             cursor.execute("UPDATE "+hifldtable\
                            +" SET AddressTRUNC = \
                             (CASE WHEN LEN(ADDRESS)>40 THEN CONCAT(LEFT(ADDRESS,37),'...') \
@@ -881,7 +901,7 @@ with open(tempRowCountPath, "w") as xf:
                                 LEFT(City, 40), \
                                 Zip, \
                                 State, \
-                                RIGHT(Telephone,14), \
+                                LEFT(Telephone,14), \
                                 MedianYearBuilt, \
                                 Cost, \
                                 Y, \
