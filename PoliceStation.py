@@ -702,14 +702,14 @@ with open(tempRowCountPath, "w") as xf:
                                 State, \
                                 Telephone, \
                                 MedianYearBuilt, \
-                                Cost, \
+                                BldgCost, \
                                 Y, \
                                 X, \
                                 Area, \
                                 ShelterCapacity, \
                                 BackupPower, \
                                 Kitchen, \
-                                NAICSCODE \
+                                CommentTRUNC \
                                 \
                                 FROM "+hifldTable+\
                                 " WHERE PoliceStationId IS NOT NULL \

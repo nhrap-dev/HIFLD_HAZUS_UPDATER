@@ -442,7 +442,7 @@ try:
                         SET ContentsCost = BldgCost * "+ContentValPct
             cursor.execute(updateData)
             conn.commit()
-
+            
             # Update Cost
             updateData = "UPDATE "+hifldtable+" \
                         SET Cost = BldgCost + ContentsCost"
@@ -711,7 +711,7 @@ with open(tempRowCountPath, "w") as xf:
                                 State, \
                                 Telephone, \
                                 MedianYearBuilt, \
-                                Cost, \
+                                BldgCost, \
                                 Y, \
                                 X, \
                                 Area, \
@@ -719,7 +719,7 @@ with open(tempRowCountPath, "w") as xf:
                                 BackupPower, \
                                 Kitchen, \
                                 NumTrucks, \
-                                NAICSCODE \
+                                CommentTRUNC \
                                 \
                                 FROM "+hifldTable+\
                                 " WHERE FireStationId IS NOT NULL \

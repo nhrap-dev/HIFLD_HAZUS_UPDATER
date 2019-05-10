@@ -903,14 +903,14 @@ with open(tempRowCountPath, "w") as xf:
                                 State, \
                                 LEFT(Telephone,14), \
                                 MedianYearBuilt, \
-                                Cost, \
+                                BldgCost, \
                                 Y, \
                                 X, \
                                 Area, \
                                 ShelterCapacity, \
                                 BackupPower, \
                                 Kitchen, \
-                                NAICSCODE \
+                                CommentTRUNC \
                                 \
                                 FROM "+hifldTable+\
                                 " WHERE EocId IS NOT NULL \
