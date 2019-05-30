@@ -2,17 +2,18 @@ Colin Lindeman, GIS Developer, NiyamIT
 
 
 PREREQUISITES:
-	HAZUS version 4.2.1 or newer installed
+	HAZUS version 4.2.3 or newer installed
 		This version of HAZUS also requires ArcGIS version 10.5
 	Python version 2.7 installed as part of the HAZUS/ArcGIS install
 		Will need to install PYODBC, ideally with PIP
 	SQL Server
 		1) Attach the 'Hazus_model_data.mdf' database from 'C:\Program Files (x86)\Hazus-MH\Data\Aggregation'
-		2) Add CensusUrbanAreas to SQL Server under CDMS. You can use ESRI ArcMap to import the data using the 
+		If using HAZUS version prior to 4.2.3 then follow steps 2 and 3:
+		2) Add cdms.dbo.eqEFBldgTypeDefault. Right click database (CDMS) and select TASK > Import Data. Flat file 
+			source.	SQL Server Native Client 11.0. Use SQL Server Auth; hazuspuser; CDMS database.
+		3) Add CensusUrbanAreas to SQL Server under CDMS. You can use ESRI ArcMap to import the data using the 
 			Feature Class to Feature Class tool. Name it "cdms_CensusUrbanArea" or rename it to this if its 
 			in all caps. This dataset must be in WGS84.
-		3) Add cdms.dbo.eqEFBldgTypeDefault. Right click database (CDMS) and select TASK > Import Data. Flat file 
-			source.	SQL Server Native Client 11.0. Use SQL Server Auth; hazuspuser; CDMS database.
 
 STEPS:	
 	1) Copy the .py, .ini files to 'this path'.
