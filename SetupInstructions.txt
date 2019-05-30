@@ -2,7 +2,7 @@ Colin Lindeman, GIS Developer, NiyamIT
 
 
 PREREQUISITES:
-	HAZUS version xx installed
+	HAZUS version 4.2.1 or newer installed
 		This version of HAZUS also requires ArcGIS version 10.5
 	Python version 2.7 installed as part of the HAZUS/ArcGIS install
 		Will need to install PYODBC, ideally with PIP
