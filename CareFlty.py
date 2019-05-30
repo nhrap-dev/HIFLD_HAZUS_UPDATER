@@ -237,7 +237,8 @@ try:
             reader = csv.DictReader(f)
             for row in reader:
                 # Do not load facilities with Status = Closed
-                if row["STATE"] == state and row["STATUS"] <> "CLOSED" and row["TYPE"] <> "MILITARY":
+                ##if row["STATE"] == state and row["STATUS"] <> "CLOSED" and row["TYPE"] <> "MILITARY":
+                if row["STATE"] == state and row["STATUS"] <> "CLOSED":
                     RowCountCSV1 += 1
                     # there are several records with funky ANSI 
                     # character, but not utf-8. Possibly not ASCII character.

@@ -542,6 +542,7 @@ try:
                     RowCountCSV4Dict[state] = RowCountCSV4
         except Exception as e:
             print " csv4 dict exception: ID {}, {}".format(row["IPEDSID"], (e))
+
 except:
     print " exception Copy Downloaded HIFLD CSV's to Staging Table"
 print "Done"
@@ -572,7 +573,7 @@ try:
                 conn.commit()
             except:
                 print " cursor execute UPDATE hzTract"
-
+            
         # SchoolId (State abbreviation plus 6 digits eg WA123456,
         # this must be unique and will persist across four tables.
         # IDSeq should be unique, non null and int)
