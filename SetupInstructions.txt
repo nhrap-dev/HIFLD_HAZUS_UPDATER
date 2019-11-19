@@ -14,6 +14,10 @@ PREREQUISITES:
 		3) Add CensusUrbanAreas to SQL Server under CDMS. You can use ESRI ArcMap to import the data using the 
 			Feature Class to Feature Class tool. Name it "cdms_CensusUrbanArea" or rename it to this if its 
 			in all caps. This dataset must be in WGS84.
+		4) Add cdms.dbo.HwyOwnerTable
+		5) Add cdms.dbo.HwyCalTransCost
+		6) Add cdms.dbo.StateRsMeans
+		7) Add cdms.dbo.CaltransMasterList_2019
 
 STEPS:	
 	1) Copy the .py, .ini files to 'this path'.
@@ -22,3 +26,7 @@ STEPS:
 	4) Run the .py script. If any errors occur, see the HELP section.
 
 	
+WARNINGS:
+	1) When running any script that uses Arcpy module you will need to attach AS,IN,OR databases with a underscore prefix "	
+		to avoid reserved SQL and having the script fail. You will also need to revert the change to run on non-arcpy 	
+		scripts. If you are not running AS,IN,OR you will not need to make the change.
