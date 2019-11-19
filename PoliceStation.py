@@ -24,7 +24,7 @@ import ConfigParser
 print "Read config.ini file..."
 # User defined variables from .ini file...
 # User needs to change config path
-configPath = "D:\Dropbox\NiyaMIT\config.ini"
+configPath = "D:\Dropbox\NiyaMIT\Transportation Utility\config.ini"
 cfgParser = ConfigParser.ConfigParser()
 cfgParser.read(configPath)
 url = cfgParser.get("HIFLD OPEN DATA URLS", "PoliceStations_URL")
@@ -222,6 +222,7 @@ try:
                                     ?, \
                                     ?)"
                     try:
+                        csvCounty = row["COUNTY"].decode("utf-8").encode("ascii", "ignore")
                         cursor.execute(sqlInsertData,
                                        [row["ID"], \
                                         row["NAME"], \
@@ -231,12 +232,12 @@ try:
                                         row["ZIP"], \
                                         row["TELEPHONE"], \
                                         row["TYPE"], \
-                                        row["COUNTY"], \
+                                        csvCounty, \
                                         row["Y"], \
-                                        row["X"], \
-                                        row["NAICSCODE"], \
-                                        row["NAICSDESCR"], \
-                                        row["STATE_ID"]])
+                                        row["\xef\xbb\xbfX"], \
+                                        row["NAICS_CODE"], \
+                                        row["NAICS_DESC"], \
+                                        row["STATE"]])
                         conn.commit()
                     except Exception as e:
                         print " cursor execute insertData CSV exception: ID {}, {}".format(row["ID"], (e))

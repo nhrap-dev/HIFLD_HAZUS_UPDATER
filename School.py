@@ -25,7 +25,7 @@ import codecs
 print "Read config.ini file..."
 # User defined variables from .ini file...
 # User needs to change config path
-configPath = "D:\Dropbox\NiyaMIT\config.ini"
+configPath = "D:\Dropbox\NiyaMIT\Transportation Utility\config.ini"
 cfgParser = ConfigParser.ConfigParser()
 cfgParser.read(configPath)
 url = cfgParser.get("HIFLD OPEN DATA URLS", "School_URL")
@@ -535,7 +535,7 @@ try:
                                         row["NAICS_DESC"],
                                         row["POPULATION"], \
                                         "EFS2", \
-                                        row["ENROLL"]])
+                                        row["TOT_ENROLL"]])
                         conn.commit()
                     except Exception as e:
                         print " cursor execute insertData CSV4 exception: ID {}, {}".format(row["IPEDSID"], (e))

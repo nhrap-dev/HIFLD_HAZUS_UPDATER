@@ -33,7 +33,7 @@ import codecs
 print "Read config.ini file..."
 # User defined variables from .ini file...
 # User needs to change config path
-configPath = "D:\Dropbox\NiyaMIT\config.ini"
+configPath = "D:\Dropbox\NiyaMIT\Transportation Utility\config.ini"
 cfgParser = ConfigParser.ConfigParser()
 cfgParser.read(configPath)
 url = cfgParser.get("HIFLD OPEN DATA URLS", "EmergencyCtr_URL")
@@ -310,38 +310,39 @@ try:
                 RowCountCSV2 += 1
                 # there are several records with funky ANSI 
                 # character, but not utf-8. Possibly not ASCII character.
-                csvFid = row["FID"].decode("utf-8").encode("ascii", "ignore")
-                csvStreet = row["STREET"].decode("utf-8").encode("ascii", "ignore")
+                # schema and url changed by 2019-11-06
+##                csvFid = row["FID"].decode("utf-8").encode("ascii", "ignore")
+                csvObjectid = row["OBJECTID"].decode("utf-8").encode("ascii", "ignore")
+##                csvStreet = row["STREET"].decode("utf-8").encode("ascii", "ignore")
+                csvStreet = row["ADDRESS1"].decode("utf-8").encode("ascii", "ignore")
                 csvName = row["NAME"].decode("utf-8").encode("ascii", "ignore")
                 csvCity = row["CITY"].decode("utf-8").encode("ascii", "ignore")
-                csvState_Name = row["STATE"].decode("utf-8").encode("ascii", "ignore")
-                csvPhone = row["PHONE"].decode("utf-8").encode("ascii", "ignore")
-                csvZipcode = row["ZIPCODE"].decode("utf-8").encode("ascii", "ignore")
-                csvY = row["LAT"].decode("utf-8").encode("ascii", "ignore")
-                csvX = row["LON"].decode("utf-8").encode("ascii", "ignore")
+##                csvState_Name = row["STATE"].decode("utf-8").encode("ascii", "ignore")
+                csvStateName = row["STATENAME"].decode("utf-8").encode("ascii", "ignore")
+##                csvPhone = row["PHONE"].decode("utf-8").encode("ascii", "ignore")
+                csvTelePhone = row["TELEPHONE"].decode("utf-8").encode("ascii", "ignore")
+##                csvZipcode = row["ZIPCODE"].decode("utf-8").encode("ascii", "ignore")
+                csvZip = row["ZIP"].decode("utf-8").encode("ascii", "ignore")
+##                csvY = row["LAT"].decode("utf-8").encode("ascii", "ignore")
+##                csvX = row["LON"].decode("utf-8").encode("ascii", "ignore")
+                csvY = row["LATITUDE"].decode("utf-8").encode("ascii", "ignore")
+                csvX = row["LONGITUDE"].decode("utf-8").encode("ascii", "ignore")
                 # Add all rows and filter them out via the CountyFIPS IS NULL when copying into HAZUS tables
                 # This list order must match the order of the created table that it's being inserted into                 
                 sqlInsertData = "INSERT INTO ["+state+"]..[hifld_EmergencyCtr] ("\
                                 +hifld_EmergencyCtr_Columns+") \
                                 VALUES \
-                                (?, \
-                                ?, \
-                                ?, \
-                                ?, \
-                                ?, \
-                                ?, \
-                                ?, \
-                                ?, \
-                                ?)"
+                                (?, ?, ?, ?, ?, \
+                                ?, ?, ?, ?)"
                 try:
                     cursor.execute(sqlInsertData,
-                                    [csvFid, \
+                                    [csvObjectid, \
                                     csvName, \
                                     csvStreet, \
                                     csvCity, \
-                                    csvState_Name, \
-                                    csvZipcode, \
-                                    csvPhone, \
+                                    csvStateName, \
+                                    csvZip, \
+                                    csvTelePhone, \
                                     csvY, \
                                     csvX])
                     conn.commit()
@@ -400,10 +401,21 @@ try:
                                 ?, \
                                 ?)"
                 try:
-                    cursor.execute(sqlInsertData,
-                                    [row["FID"], \
-                                    row["Name"], \
-                                    row["ST_ADDR"], \
+## worked before change in url on 2019-11-05
+##                    cursor.execute(sqlInsertData,
+##                                    [row["FID"], \
+##                                    row["Name"], \
+##                                    row["ST_ADDR"], \
+##                                    row["CITY_NAME"], \
+##                                    row["STATE_NAME"], \
+##                                    row["ZIP"], \
+##                                    row["TYPE"], \
+##                                    row["Y"], \
+##                                    row["X"]])
+                          cursor.execute(sqlInsertData,
+                                    [row["OBJECTID"], \
+                                    row["NAME"], \
+                                    row["ADDRESS1"], \
                                     row["CITY_NAME"], \
                                     row["STATE_NAME"], \
                                     row["ZIP"], \
