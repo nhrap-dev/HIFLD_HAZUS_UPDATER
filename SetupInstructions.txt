@@ -4,6 +4,7 @@ Colin Lindeman, GIS Developer, NiyamIT
 PREREQUISITES:
 	HAZUS version 4.2.3 or newer installed
 		This version of HAZUS also requires ArcGIS version 10.5
+		CDMS install is required as well
 	Python version 2.7 installed as part of the HAZUS/ArcGIS install
 		Will need to install PYODBC, ideally with PIP
 	SQL Server
@@ -13,7 +14,7 @@ PREREQUISITES:
 			source.	SQL Server Native Client 11.0. Use SQL Server Auth; hazuspuser; CDMS database.
 		3) Add CensusUrbanAreas to SQL Server under CDMS. You can use ESRI ArcMap to import the data using the 
 			Feature Class to Feature Class tool. Name it "cdms_CensusUrbanArea" or rename it to this if its 
-			in all caps. This dataset must be in WGS84.
+			in all caps. This dataset must be in WGS84 GCS.
 		4) Add cdms.dbo.HwyOwnerTable
 		5) Add cdms.dbo.HwyCalTransCost
 		6) Add cdms.dbo.StateRsMeans
@@ -24,9 +25,16 @@ STEPS:
 	2) Update the .py 'configPath' variable to point to the the .ini file from step 1.
 	3) Update the ServerName, UserName and Password in the .ini file with your credentials for SQL Server.
 	4) Run the .py script. If any errors occur, see the HELP section.
+	5) To be able to aggregate new Study Regions in Hazus do the following:
+	5a) Detach the 'Hazus_model' database 
+	5b) Right-click on 'C:\Program Files (x86)\Hazus-MH\Data\Aggregation\Hazus_model_data.mdf' 
+	5c) Select the Security tab 
+	5d) Add Everyone 
+	5e) Grant Full Permissions 
+	5f) Click OK
 
 	
 WARNINGS:
-	1) When running any script that uses Arcpy module you will need to attach AS,IN,OR databases with a underscore prefix "	
-		to avoid reserved SQL and having the script fail. You will also need to revert the change to run on non-arcpy 	
-		scripts. If you are not running AS,IN,OR you will not need to make the change.
+	1) When running any script that uses Arcpy module you will need to attach AS,IN,OR databases with a underscore prefix "_" 
+		as in _AS,_IN,_OR to avoid reserved SQL and having the script fail. You will also need to revert the change 
+		to run on non-arcpy scripts. If you are not running AS,IN,OR you will not need to make the change.
