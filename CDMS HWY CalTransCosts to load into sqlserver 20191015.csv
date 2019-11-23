@@ -1,0 +1,28 @@
+BridgeClass,CA_Cost_DollarSqFt,CA_Cost_DollarSqM,Design,Description
+HWB1,600 ,6458 , Conventional ,Major Bridge - Length > 150m (Conventional Design)
+HWB2,550 ,5920 , Seismic ,Major Bridge - Length > 150m (Seismic Design)
+HWB3,400 ,4306 , Conventional ,Single Span – (Not HWB1 or HWB2) (Conventional Design)
+HWB4,475 ,5113 , Seismic ,Single Span – (Not HWB1 or HWB2) (Seismic Design)
+HWB5,375 ,4036 , Conventional ,"Concrete, Multi-Column Bent, Simple Support (Conventional Design), Non-California (Non-CA)"
+HWB6,375 ,4036 , Conventional ,"Concrete, Multi-Column Bent, Simple Support (Conventional Design), California (CA)"
+HWB7,475 ,5113 , Seismic ,"Concrete, Multi-Column Bent, Simple Support (Seismic Design)"
+HWB8,300 ,3229 , Conventional ,"Continuous Concrete, Single Column, Box Girder (Conventional Design)"
+HWB9,400 ,4306 , Seismic ,"Continuous Concrete, Single Column, Box Girder (Seismic Design)"
+HWB10,275 ,2960 , Conventional ,"Continuous Concrete, (Not HWB8 or HWB9) (Conventional Design)"
+HWB11,300 ,3229 , Seismic ,"Continuous Concrete, (Not HWB8 or HWB9) (Seismic Design)"
+HWB12,550 ,5920 , Conventional ,"Steel, Multi-Column Bent, Simple Support (Conventional Design), Non-California (Non-CA)"
+HWB13,550 ,5920 , Conventional ,"Steel, Multi-Column Bent, Simple Support (Conventional Design), California (CA)"
+HWB14,700 ,7535 , Seismic ,"Steel, Multi-Column Bent, Simple Support (Seismic Design)"
+HWB15,550 ,5920 , Conventional ,Continuous Steel (Conventional Design)
+HWB16,700 ,7535 , Seismic ,Continuous Steel (Seismic Design)
+HWB17,375 ,4036 , Conventional ,"PS Concrete Multi-Column Bent, Simple Support - (Conventional Design), Non-California "
+HWB18,375 ,4036 , Conventional ,"PS Concrete, Multi-Column Bent, Simple Support (Conventional Design), California (CA)"
+HWB19,475 ,5113 , Seismic ,"PS Concrete, Multi-Column Bent, Simple Support (Seismic Design)"
+HWB20,375 ,4036 , Conventional ,"PS Concrete, Single Column, Box Girder (Conventional Design)"
+HWB21,475 ,5113 , Seismic ,"PS Concrete, Single Column, Box Girder (Seismic Design)"
+HWB22,350 ,3767 , Conventional ,"Continuous Concrete, (Not HWB20/HWB21) (Conventional Design)"
+HWB23,400 ,4306 , Seismic ,"Continuous Concrete, (Not HWB20/HWB21) (Seismic Design)"
+HWB24,550 ,5920 , Conventional ,Same definition as HWB12 except that the bridge length is less than 20 meters
+HWB25,600 ,6458 , Conventional ,Same definition as HWB13 except that the bridge length is less than 20 meters
+HWB27,750 ,8073 , Conventional ,Same definition as HWB16 except that the bridge length is less than 20 meters and in CA
+HWB28,300 ,3229 , Conventional ,All other bridges that are not classified (including wooden bridges)
