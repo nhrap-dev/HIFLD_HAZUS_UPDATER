@@ -33,7 +33,7 @@ import codecs
 print "Read config.ini file..."
 # User defined variables from .ini file...
 # User needs to change config path
-configPath = "D:\Dropbox\NiyaMIT\Transportation Utility\config.ini"
+configPath = ".\config.ini"
 cfgParser = ConfigParser.ConfigParser()
 cfgParser.read(configPath)
 url = cfgParser.get("HIFLD OPEN DATA URLS", "EmergencyCtr_URL")

@@ -24,7 +24,7 @@ import ConfigParser
 print "Read config.ini file..."
 # User defined variables from .ini file...
 # User needs to change config path
-configPath = "D:\Dropbox\NiyaMIT\Transportation Utility\config.ini"
+configPath = ".\config.ini"
 cfgParser = ConfigParser.ConfigParser()
 cfgParser.read(configPath)
 url = cfgParser.get("HIFLD OPEN DATA URLS", "NullURL")
@@ -71,8 +71,8 @@ print
 ##print
 
 #TEMP until able to download data...
-##tempCSVPath = r"D:\Dropbox\NiyaMIT\Transportation Utility\InputData\2018hwybronefiledel\2018HwyBridgesDelimitedAllStates.csv"
-##tempCSVPath = r"D:\Dropbox\NiyaMIT\Transportation Utility\InputData\National_Bridge_Inventory_NBI_Bridges.csv"
+##tempCSVPath = r".\InputData\2018hwybronefiledel\2018HwyBridgesDelimitedAllStates.csv"
+##tempCSVPath = r".\InputData\National_Bridge_Inventory_NBI_Bridges.csv"
 tempCSVPath = r"E:\HazusData\SourceDownloads20191100\National_Bridge_Inventory_NBI_Bridges.csv"
 print tempCSVPath
 print
