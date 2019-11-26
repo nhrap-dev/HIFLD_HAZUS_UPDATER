@@ -2,39 +2,71 @@ Colin Lindeman, GIS Developer, NiyamIT
 
 
 PREREQUISITES:
-	HAZUS version 4.2.3 or newer installed
-		This version of HAZUS also requires ArcGIS version 10.5
-		CDMS install is required as well
-	Python version 2.7 installed as part of the HAZUS/ArcGIS install
-		Will need to install PYODBC, ideally with PIP
-	SQL Server
+	HAZUS version 4.2.3 or newer installed.
+		This version of HAZUS also requires ArcGIS version 10.5.
+		Below is a list of tables utilized in these scripts:
+			CDMS install is required as well
+				[CDMS]..[CaltransMasterList_2019]
+				[CDMS]..[cdms_AEBMParameters]
+				[CDMS]..[cdms_CensusUrbanAreas]
+				[CDMS]..[cdms_syCounty]
+				[CDMS]..[eqEFBldgTypeDefault]
+				[CDMS]..[GeneralBuildingEarthquakeBuilding]
+				[CDMS]..[HwyCalTransCost] 
+				[CDMS]..[HwyOwnerTable]
+				[CDMS]..[hzPctContentOfStructureValue]
+				[CDMS]..[hzReplacementCost]
+				[CDMS]..[hzSqftFactors]
+				[CDMS]..[StateRSMeans]
+			Hazus_model install is required as well
+				[Hazus_model]..[fl*Dflt]
+					* = Essential Facility
+			State database tables
+				['state']..[eq*]
+				['state']..[fl*]
+				['state']..[flSchemeMapping]
+				['state']..[hifld_*] (these are created by the Python scripts)
+				['state']..[hz*]
+				['state']..[hzDemographicsT] 
+				['state']..[hzMeansCountyLocationFactor]
+				['state']..[hzTract]
+					* = Essential Facility, Transportation, Utility
+			Other
+				sys.indexes
+				sys.objects
+	Python version 2.7 installed as part of the HAZUS/ArcGIS install.
+		Will need to install PYODBC, ideally with PIP.
+	SQL Server.
 		1) Attach the 'Hazus_model_data.mdf' database from 'C:\Program Files (x86)\Hazus-MH\Data\Aggregation'
-		If using HAZUS version prior to 4.2.3 then follow steps 2 and 3:
+		If using HAZUS version prior to 4.2.3, then follow steps 2 and 3:
 		2) Add cdms.dbo.eqEFBldgTypeDefault. Right click database (CDMS) and select TASK > Import Data. Flat file 
 			source.	SQL Server Native Client 11.0. Use SQL Server Auth; hazuspuser; CDMS database.
 		3) Add CensusUrbanAreas to SQL Server under CDMS. You can use ESRI ArcMap to import the data using the 
 			Feature Class to Feature Class tool. Name it "cdms_CensusUrbanArea" or rename it to this if its 
 			in all caps. This dataset must be in WGS84 GCS.
-		4) Add cdms.dbo.HwyOwnerTable
-		5) Add cdms.dbo.HwyCalTransCost
-		6) Add cdms.dbo.StateRsMeans
-		7) Add cdms.dbo.CaltransMasterList_2019
+		If using HAZUS version prior to TBD, then follow steps 4-7:
+		4) Add csv as "cdms.dbo.HwyOwnerTable"
+		5) Add csv as "cdms.dbo.HwyCalTransCost"
+		6) Add csv as "cdms.dbo.StateRsMeans"
+		7) Add csv as "cdms.dbo.CaltransMasterList_2019"
 
 STEPS:	
-	1) Copy the .py, .ini files to 'this path'.
-	2) Update the .py 'configPath' variable to point to the the .ini file from step 1.
-	3) Update the ServerName, UserName and Password in the .ini file with your credentials for SQL Server.
-	4) Run the .py script. If any errors occur, see the HELP section.
-	5) To be able to aggregate new Study Regions in Hazus do the following:
-	5a) Detach the 'Hazus_model' database 
-	5b) Right-click on 'C:\Program Files (x86)\Hazus-MH\Data\Aggregation\Hazus_model_data.mdf' 
-	5c) Select the Security tab 
-	5d) Add Everyone 
-	5e) Grant Full Permissions 
-	5f) Click OK
+	1) Copy the .py, .ini files to the same folder.
+	2) Update the ServerName, UserName and Password in the .ini file with your credentials for SQL Server.
+	3) Run the .py script. If any errors occur, see the HELP section.
+	3a) HighwayBridges csv file should be downloaded and the script updated to point to it prior to running. See warning 2.
+	4) To be able to aggregate new Study Regions in Hazus do the following:
+	4a) Detach the 'Hazus_model' database 
+	4b) Right-click on 'C:\Program Files (x86)\Hazus-MH\Data\Aggregation\Hazus_model_data.mdf' 
+	4c) Select the Security tab 
+	4d) Add Everyone 
+	4e) Grant Full Permissions 
+	4f) Click OK
 
 	
 WARNINGS:
 	1) When running any script that uses Arcpy module you will need to attach AS,IN,OR databases with a underscore prefix "_" 
 		as in _AS,_IN,_OR to avoid reserved SQL and having the script fail. You will also need to revert the change 
 		to run on non-arcpy scripts. If you are not running AS,IN,OR you will not need to make the change.
+	2) Highwaybridges (National_Bridge_Inventory_NBI_Bridges.csv) may not download in a reasonable time and the script may fail. A 	
+		workaround is to download the csv and set the variable "tempCSVPath" to the path of the downloaded csv file.
